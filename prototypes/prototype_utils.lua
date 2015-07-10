@@ -1,5 +1,13 @@
 require("../config")
 
+function disable_entity(name, type)
+    local ent = data.raw[type][name] or name
+    local peak = { influence = -1 }
+    if ent and ent.autoplace then
+        ent.autoplace.peaks = { peak }
+    end
+end
+
 function is_partial()
   return (override_type == 'partially')
 end
