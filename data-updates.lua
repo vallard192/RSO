@@ -3,15 +3,15 @@ require("prototypes.prototype_utils")
 
 if data.raw['noise-layer']['rso'] then
     for _, resouce in pairs(data.raw.resource) do
-        disable_entity(resource)
+    --    disable_entity(resource)
     end
 
     for _, ent in pairs(data.raw['unit-spawner']) do
-        disable_entity(ent)
+    --    disable_entity(ent)
     end
 
     for _, ent in pairs(data.raw.turret) do
-        disable_entity(ent)
+    --    disable_entity(ent)
     end
 end
 --if data.raw['noise-layer']['rso'] then
