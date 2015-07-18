@@ -20,12 +20,12 @@ function loadResourceConfig()
 	fillVanillaConfig()
 	
 	--[[ MODS SUPPORT ]]--
-	if not game.entityprototypes["alien-ore"] or useEnemiesInPeaceMod then  -- if the user has peacemod installed he probably doesn't want that RSO spawns them either. remote.interfaces["peacemod"]
+	if not game.entity_prototypes["alien-ore"] or useEnemiesInPeaceMod then  -- if the user has peacemod installed he probably doesn't want that RSO spawns them either. remote.interfaces["peacemod"]
 		fillEnemies()
 	end
 	
 	-- Roadworks mod
-	if game.entityprototypes["RW_limestone"] then
+	if game.entity_prototypes["RW_limestone"] then
 		fillRoadworksConfig()
 	end
 	
@@ -34,47 +34,47 @@ function loadResourceConfig()
 	fillDytechConfig()
 	
 	-- BobOres
-	if game.entityprototypes["rutile-ore"] then
+	if game.entity_prototypes["rutile-ore"] then
 		fillBoboresConfig()
 	end
 	
 	-- peace mod
-	if game.entityprototypes["alien-ore"] then
+	if game.entity_prototypes["alien-ore"] then
 		fillPeaceConfig()
 	end  
 	
 	--yuoki industries mod
-	if game.entityprototypes["y-res1"] then
+	if game.entity_prototypes["y-res1"] then
 		fillYuokiConfig()
 	end
 	
 	--mopower mod
-	if game.entityprototypes["uranium-ore"] then
+	if game.entity_prototypes["uranium-ore"] then
 		fillMopowerConfig()
 	end
 	
 	--replicators mod
-	if game.entityprototypes["rare-earth"] then
+	if game.entity_prototypes["rare-earth"] then
 		fillReplicatorsConfig()
 	end
 	
 	--uranium power mod
-	if game.entityprototypes["uraninite"] then
+	if game.entity_prototypes["uraninite"] then
 		fillUraniumpowerConfig()
 	end
 
 	-- ground sulfur
-	if game.entityprototypes["sulfur"] then
+	if game.entity_prototypes["sulfur"] then
 		fillGroundSulfurConfig()
 	end
 	
 	-- evolution
-	if game.entityprototypes["alien-artifacts"] then
+	if game.entity_prototypes["alien-artifacts"] then
 		fillEvolutionConfig()
 	end
 	
 	-- replicators
-	if game.entityprototypes["creatine"] then
+	if game.entity_prototypes["creatine"] then
 		fillReplicatorsConfig()
 	end
 

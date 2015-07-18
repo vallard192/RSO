@@ -193,7 +193,7 @@ function fillBoboresConfig()
 	}
 	
 	-- check if Nickel, Cobalt, Sulfur or GemOre is added by bobs ores
-	if game.entityprototypes["cobalt-ore"] then
+	if game.entity_prototypes["cobalt-ore"] then
 		config["cobalt-ore"] = {
 			type="resource-ore",
 			
@@ -213,7 +213,7 @@ function fillBoboresConfig()
 		}
 	end
 	
-	if game.entityprototypes["nickel-ore"] then
+	if game.entity_prototypes["nickel-ore"] then
 		config["nickel-ore"] = {
 			type="resource-ore",
 			
@@ -236,7 +236,7 @@ function fillBoboresConfig()
 		
 	end
 	
-	if game.entityprototypes["sulfur"] then
+	if game.entity_prototypes["sulfur"] then
 		config["sulfur"] = {
 			type="resource-ore",
 			
@@ -256,7 +256,7 @@ function fillBoboresConfig()
 		}
 	end
 	
-	if game.entityprototypes["gem-ore"] then
+	if game.entity_prototypes["gem-ore"] then
 		config["gem-ore"] = {
 			type="resource-ore",
 			
@@ -276,17 +276,17 @@ function fillBoboresConfig()
 		}
 	end
 	
-	if game.entityprototypes["cobalt-ore"] and game.entityprototypes["nickel-ore"] then
+	if game.entity_prototypes["cobalt-ore"] and game.entity_prototypes["nickel-ore"] then
 		config["cobalt-ore"].multi_resource["nickel-ore"] = 3
 		config["nickel-ore"].multi_resource["cobalt-ore"] = 3
 	end
 	
-	if game.entityprototypes["gem-ore"] and game.entityprototypes["nickel-ore"] then
+	if game.entity_prototypes["gem-ore"] and game.entity_prototypes["nickel-ore"] then
 		config["gem-ore"].multi_resource["nickel-ore"] = 3
 		config["nickel-ore"].multi_resource["gem-ore"] = 3
 	end
 	
-	if game.entityprototypes["gem-ore"] and game.entityprototypes["cobalt-ore"] then
+	if game.entity_prototypes["gem-ore"] and game.entity_prototypes["cobalt-ore"] then
 		config["gem-ore"].multi_resource["cobalt-ore"] = 3
 		config["cobalt-ore"].multi_resource["gem-ore"] = 3
 	end
