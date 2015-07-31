@@ -1,0 +1,9 @@
+Release:
+  - implement Resource "class"
+  - implement the ore spawn logic
+  - implement liquid spawn logic
+  - implement biter spawn logic
+
+Planned Features:
+  - Settings GUI
+  - Migration from "old" RSO to new
