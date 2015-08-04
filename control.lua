@@ -1,6 +1,7 @@
 require "defines"
 require "Surface"
 require "Settings"
+require "Interface"
 
 local function message(msg)
     game.player.print(msg)
@@ -65,3 +66,5 @@ game.on_load(on_load)
 
 game.on_event(defines.events.on_chunk_generated, on_chunk_generated)
 game.on_event(defines.events.on_tick, on_tick)
+
+remote.add_interface("RSO", Interface)

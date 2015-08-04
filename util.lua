@@ -22,3 +22,15 @@ function debug(msg)
         end
     end
 end
+
+function random_float(lower, upper)
+    return lower + math.random() * (upper-lower);
+end
+
+function rotate(pos, origin, angle)
+    local x_shift = pos.x - origin.x
+    local y_shift = pos.y - origin.y
+    local x_rot = x_shift * math.cos(angle) - y_shift * math.sin(angle)
+    local y_rot = y_shift * math.cos(angle) + x_shift * math.sin(angle)
+    return {x=x_rot, y = y_rot}
+end

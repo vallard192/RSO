@@ -77,15 +77,15 @@ Region = {
                     --debug(#r.chunks)
                     if #r.chunks > max then
                         max = #r.chunks
-                        debug(max)
+                        --debug(max)
                     end
                 if #r.chunks == global.settings.region_size * global.settings.region_size - 1 then
-                    debug("region full")
+                    --debug("region full")
                 end
                 return r
             end
         end
-        debug("new region \nsize: "..size.." x: "..x.." rx: "..rx.." y: "..y.." ry: "..ry)
+        --debug("new region \nsize: "..size.." x: "..x.." rx: "..rx.." y: "..y.." ry: "..ry)
         r = Region.new(RSO_Surface, area)
         --dump(r)
         return r

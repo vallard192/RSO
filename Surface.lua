@@ -24,8 +24,8 @@ RSO_Surface = {
 
     setmetatable(new, {__index=RSO_Surface})
     table.insert(global.surfaces, new)
-    dump(global.surfaces)
-    dump(new)
+    --dump(global.surfaces)
+    --    dump(new)
     return new
   end,
 
