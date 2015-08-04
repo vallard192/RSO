@@ -1,6 +1,6 @@
 Release:
   - implement Resource "class"
-  - implement the ore spawn logic
+  - implement the ore spawn logic - done
   - implement liquid spawn logic
   - implement biter spawn logic
 

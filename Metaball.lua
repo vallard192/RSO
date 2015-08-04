@@ -10,6 +10,8 @@ MOD_SHEAR_MAX = 2
 RANDOM_WALK_MIN = 10
 RANDOM_WALK_MAX = 20
 
+SUM_CUTOFF = 0.01
+
 once = false
 counter = 0
 
@@ -23,7 +25,7 @@ Metaball = {
     elseif donut_ratio <0 then
         donut_ratio = 0
     end
-    debug(donut_ratio)
+    --debug(donut_ratio)
 
     local new = {
         rng = rng,
@@ -31,33 +33,23 @@ Metaball = {
             x = pos.x,
             y = pos.y,
         },
-        x = pos.x,
-        y = pos.y,
+        --x = 0, --pos.x,
+        --y = 0, --pos.y,
         radius = {
             out = r_ball * ( 1 - donut_ratio ),
             inner = r_ball * donut_ratio,
+            total = r_ball,
         },
         shear = rng:random(1/MOD_SHEAR_MAX, MOD_SHEAR_MAX),
         alpha = rng:random(0,math.pi),
         --donut_ratio = donut_ratio,
         sign = 1,
         edge = rng:random(),
-        area = {}
     }
-      local width = (math.abs(math.cos(new.alpha) * r_ball * new.shear) + math.abs(math.sin(new.alpha) * r_ball/new.shear))/2
-      local height = (math.abs(math.cos(new.alpha) * r_ball / new.shear) + math.abs(math.sin(new.alpha) * r_ball * new.shear))/2
-      new.area = {
-          left_top = {
-              x = new.x - width,
-              y = new.y - height,
-          },
-          right_bottom = {
-              x = new.x + width,
-              y = new.y + height,
-          },
-      },
-    --debug(serpent.block(new))
     setmetatable(new, {__index = Metaball})
+    new:calculate_area()
+    --dump(new)
+    --debug(serpent.block(new))
     return new
   end,
 
@@ -82,22 +74,22 @@ Metaball = {
           return 0
       end
 
-      local x_shift = (pos.x - self.x)
-      local y_shift = (pos.y - self.y)
-      local x_rot = x_shift * math.cos(self.alpha) - y_shift * math.sin(self.alpha)
-      local y_rot = y_shift * math.cos(self.alpha) + x_shift * math.sin(self.alpha)
-      local xs = x_rot/self.shear
-      local ys = y_rot*self.shear
+      --local x_shift = (pos.x - self.x)
+      --local y_shift = (pos.y - self.y)
+      --local x_rot = x_shift * math.cos(self.alpha) - y_shift * math.sin(self.alpha)
+      --local y_rot = y_shift * math.cos(self.alpha) + x_shift * math.sin(self.alpha)
       local rot = rotate(pos, self.center, self.alpha)
-      if not once and counter==2 then
-          debug(serpent.dump(self))
-          debug(serpent.block(pos)..serpent.block(self.center))
-          --debug("xs: "..x_rot.." ys: "..y_rot.." xrot: "..rot.x.." yrot: "..rot.y)
-          debug("xs: "..x_shift.." ys: "..y_shift.." xrot: "..rot.xs.." yrot: "..rot.ys)
-          once = true
-      else
-          counter = counter + 1
-      end
+      local xs = rot.x/self.shear
+      local ys = rot.y*self.shear
+--      if not once and counter==2 then
+--          debug(serpent.dump(self))
+--          debug(serpent.block(pos)..serpent.block(self.center))
+--          --debug("xs: "..x_rot.." ys: "..y_rot.." xrot: "..rot.x.." yrot: "..rot.y)
+--          debug("xs: "..x_shift.." ys: "..y_shift.." xrot: "..rot.xs.." yrot: "..rot.ys)
+--          once = true
+--      else
+--          counter = counter + 1
+--      end
 --      local xs = pos.x/self.shear
 --      local ys = pos.y*self.shear
 --      if xs>2*self.radius.out or ys>2*self.radius.out then
@@ -106,14 +98,6 @@ Metaball = {
       local circle_r = math.sqrt( xs^2 + ys^2)
       local square_r = ( xs^4 + ys^4)^(1/4)
       local r = math.abs( self.radius.inner - ( 1 - self.edge ) * circle_r - self.edge * square_r ) / self.radius.out
-      --    if ball.shape == 'square' then
-      --        r = 1 - math.abs(radius.inner - math.abs(x2) - math.abs(y2))/radius.out
-      --    elseif ball.shape == 'ellipse' then
-      --        r = 1 - math.abs(radius.inner - math.sqrt(x2^2 + y2^2))/radius.out
-      --r = 1 - math.sqrt(x2 * x2 + y2 * y2)/radius.out
-      --    elseif ball.shape == 'donut' then
-      --        r = 1 - math.abs(radius.inner - math.sqrt(x2 * x2 + y2 * y2))/radius.out
-      --end
       --debug("r: "..r.." circle_r: "..circle_r.." square_r: "..square_r.." x: "..self.x.."pos_x: "..pos.x)
       if r>=1 then
           return 0
@@ -129,8 +113,11 @@ Metaball = {
       distance = self.rng:random(RANDOM_WALK_MIN, RANDOM_WALK_MAX)
       x_shift =   distance * math.cos(alpha)
       y_shift = - distance * math.sin(alpha)
-      self.x = self.x + x_shift
-      self.y = self.y + y_shift
+      self.center.x = self.center.x + x_shift
+      self.center.y = self.center.y + y_shift
+      --self.center.x = self.x
+      --self.center.y = self.y
+      self:calculate_area()
   end,
 
   sum = function(pos, balls)
@@ -167,7 +154,7 @@ Metaball = {
               end
               sum = Metaball.sum({x=x, y=y}, balls)
               --if sum => 0 and sum <= 1 then
-              if sum > 0 then
+              if sum > SUM_CUTOFF then
                   total = total + sum
                   --debug("x: "..x.." y: "..y.." sum: "..sum)
                   return {x=x, y=y, sum=sum, total=total}
@@ -182,16 +169,17 @@ Metaball = {
   end,
 
   calculate_area = function(self)
-      local width = math.abs(math.cos(self.alpha) * radius * self.shear) + math.abs(math.sin(self.alpha) * radius/self.shear)
-      local height = math.abs(math.cos(self.alpha) * radius / self.shear) + math.abs(math.sin(self.alpha) * radius * self.shear)
-      local area = {
+    local width = (math.abs(math.cos(self.alpha) * self.radius.total * self.shear) + math.abs(math.sin(self.alpha) * self.radius.total/self.shear))
+    local height = (math.abs(math.cos(self.alpha) * self.radius.total / self.shear) + math.abs(math.sin(self.alpha) * self.radius.total * self.shear))
+    --debug("w: "..width.." h: "..height)
+    self.area = {
           left_top = {
-              x = self.x - width,
-              y = self.y - height,
+              x = math.floor(self.center.x - width),
+              y = math.floor(self.center.y - height),
           },
           right_bottom = {
-              x = self.x + width,
-              y = self.y + height,
+              x = math.ceil(self.center.x + width),
+              y = math.ceil(self.center.y + height)+0,
           },
       }
   end,
@@ -203,5 +191,25 @@ Metaball = {
       else
           return False
       end
+  end,
+
+  bounding_box = function(balls)
+      local area = {
+          left_top = {
+              x = 0,
+              y = 0,
+          },
+          right_bottom = {
+              x = 0,
+              y = 0,
+          },
+      }
+      for _,ball in ipairs(balls) do
+          area.left_top.x = math.min(area.left_top.x, ball.area.left_top.x)
+          area.left_top.y = math.min(area.left_top.y, ball.area.left_top.y)
+          area.right_bottom.x = math.max(area.right_bottom.x, ball.area.right_bottom.x)
+          area.right_bottom.y = math.max(area.right_bottom.y, ball.area.right_bottom.y)
+      end
+      return area
   end,
 }

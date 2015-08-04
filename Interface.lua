@@ -1,5 +1,7 @@
 require "util"
-require "Metaballs"
+require "Metaball"
+require "Surface"
+require "Resource"
 require "libs/random"
 
 rng = Random.init(1)
@@ -22,7 +24,16 @@ Interface = {
         end
     end,
 
-    test_spawn = function(args)
+    test_spawn = function(...)
+        local res = Resource.new(game.entity_prototypes['iron-ore'],nil)
+        local args = {...}
+        dump(args)
+        local x = args[1] or game.player.position.x or 0
+        local y = args[2] or game.player.position.y or 0
+        debug("x "..x.." y "..y)
+        res:spawn_ore({x = x, y = y }, rng)
+    end,
+    dummy = function()
         local nballs = 1
         local center = {x = 0, y = 0}
         local balls = {}
@@ -46,10 +57,12 @@ Interface = {
         local max = 200
         local min_amount = 250
         local richness = 1000
-        local area = {
-            left_top = { x = -max, y = -max },
-            right_bottom = { x = max, y = max }
-        }
+        --local area = {
+        --    left_top = { x = -max, y = -max },
+        --    right_bottom = { x = max, y = max }
+        --}
+        local area = Metaball.bounding_box(balls)
+        dump(area)
         for location in Metaball.iterate(area, balls) do
             --dump(location)
             ore_locations[#ore_locations+1] = location

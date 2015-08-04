@@ -17,6 +17,7 @@ local function init()
         global.settings = Settings.new()
         if global.surfaces == nil then
             global.surfaces = {}
+            global.on_tick = {}
             global.tick = 60
             --Surface.table = global.surface
         end
@@ -39,7 +40,7 @@ local function on_chunk_generated(event)
     local surface = event.surface
     if event.surface.valid then
         local chunk = event.area
-        s = RSO_Surface.get_surface_by_name(surface.name)
+        s = RSO_Surface.get_by_name(surface.name)
         --print(s.name)
         --dump(s)
         s:process_chunk(chunk)
@@ -48,6 +49,9 @@ local function on_chunk_generated(event)
 end
 
 local function on_tick(event)
+    for _,k in ipairs(global.on_tick) do
+        k()
+    end
     if game.tick == global.tick then
         dump(global.surfaces)
         --s = RSO_Surface.get_surface_by_name('nauvis')
