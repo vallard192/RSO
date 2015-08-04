@@ -1,5 +1,8 @@
 require "util"
 require "Metaballs"
+require "libs/random"
+
+rng = Random.init(1)
 
 
 Interface = {
@@ -20,19 +23,19 @@ Interface = {
     end,
 
     test_spawn = function(args)
-        math.randomseed(1)
-        local nballs = 2
+        local nballs = 1
         local center = {x = 0, y = 0}
         local balls = {}
         local size = 10
-        balls[#balls+1] = Metaball.new(center, size)
+        --local ball_rng = Random.init(game.surfaces['nauvis'].map_gen_settings.seed)
+        balls[#balls+1] = Metaball.new(center, size, rng)
         for i=1,nballs do
-            ball = Metaball.new(center, size)
+            ball = Metaball.new(center, size, rng)
             ball:random_walk()
             balls[#balls+1] = ball
         end
         for i=1,nballs do
-            ball = Metaball.new(center, size)
+            ball = Metaball.new(center, size, rng)
             ball:random_walk()
             ball.sign = -1
             balls[#balls+1] = ball
@@ -69,6 +72,19 @@ Interface = {
             surface.create_entity(settings)
         end
         debug("total: "..total)
+    end,
+
+    seed = function(seed)
+        debug("Setting seed to "..seed)
+        rng:reseed(seed)
+    end,
+
+    randint = function(...)
+        debug(rng:randint(...))
+    end,
+
+    random = function(...)
+        debug(rng:random(...))
     end,
 
 }
