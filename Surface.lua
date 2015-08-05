@@ -27,19 +27,33 @@ RSO_Surface = {
         }
         setmetatable(new, {__index=RSO_Surface})
         table.insert(global.surfaces, new)
+        if surface.name == 'nauvis' then
+            debug("Loading default resources.")
+            new:load_default_resources()
+        end
         --dump(global.surfaces)
         --    dump(new)
         return new
     end,
 
+    add_resource = function(self, data)
+        debug(data.name)
+        local r = Resource.new(data, self)
+        table.insert(self.resources, r)
+    end,
+
     load_default_resources = function(self)
-        for _,v in pairs(game.entity_prototypes) do
-            if v.type == 'resource' then
-                table.insert(self.resources, Resource.new(v, self))
-                --debug(v.name)
-                -- add Resource for it
-            end
+        --dump(global.vanilla)
+        for _,v in ipairs(global.vanilla) do
+            self:add_resource(v)
         end
+        --for _,v in pairs(game.entity_prototypes) do
+        --    if v.type == 'resource' then
+        --        table.insert(self.resources, Resource.new(v, self))
+        --        --debug(v.name)
+        --        -- add Resource for it
+        --    end
+        --end
     end,
 
     init_all = function()
@@ -101,12 +115,12 @@ RSO_Surface = {
         local x = chunk.left_top.x
         local y = chunk.left_top.y
         --local region = Region.get_by_chunk(self, chunk)
-        local region = self:get_region(chunk)
+        local region = self:get_region(chunk.left_top)
         self:remove_resources(chunk)
         self:remove_enemies(chunk)
     end,
 
-    get_region = function(self, chunk)
+    get_region = function(self, position)
         --local size = global.settings.region_size * CHUNK_SIZE
         local size = Settings.REGION_SIZE
         --debug(size)

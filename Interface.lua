@@ -31,7 +31,7 @@ Interface = {
         local x = args[1] or game.player.position.x or 0
         local y = args[2] or game.player.position.y or 0
         debug("x "..x.." y "..y)
-        res:spawn_ore({x = x, y = y }, rng)
+        res:spawn({x = x, y = y }, rng)
     end,
     dummy = function()
         local nballs = 1
@@ -99,5 +99,18 @@ Interface = {
     random = function(...)
         debug(rng:random(...))
     end,
+}
 
+Surface_Interface = {
+    list_resources = function(name)
+        local s = RSO_Surface.get_by_name(name)
+        for _,v in ipairs(s.resources) do
+            debug(v.name)
+        end
+    end,
+
+    add_resource = function(name, data)
+        local s = RSO_Surface.get_by_name(name)
+        debug(serpent.block(data))
+    end,
 }

@@ -3,13 +3,9 @@ require "Surface"
 require "Settings"
 require "Interface"
 
-local function message(msg)
-    game.player.print(msg)
-end
+require "util"
+require "prototypes"
 
-local function dump(obj)
-    game.player.print(serpent.dump(obj))
-end
 
 local function init()
     if global.version == nil then
@@ -17,6 +13,9 @@ local function init()
         global.settings = Settings.new()
         if global.surfaces == nil then
             global.surfaces = {}
+            if global.vanilla == nil then
+                global.vanilla = {}
+            end
             global.on_tick = {}
             global.tick = 60
             --Surface.table = global.surface
@@ -72,3 +71,4 @@ game.on_event(defines.events.on_chunk_generated, on_chunk_generated)
 game.on_event(defines.events.on_tick, on_tick)
 
 remote.add_interface("RSO", Interface)
+remote.add_interface("RSO_Surface", Surface_Interface)

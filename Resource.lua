@@ -3,36 +3,63 @@ require 'util'
 require "Metaball"
 
 Resource = {
-  max_allotment = 0,
+    max_allotment = 0,
 
-  new = function(resource, rsurface)
-    local new = {
-      type='resource-ore',
-      name = 'iron-ore',
-      allotment = 50,
-      spawns_per_region = { min=1, max=2 },
-      richness=1100,
-      size={min=12, max=18},
-      min_amount=250,
-      --surface = rsurface.surface,
-      surface = game.surfaces.nauvis
+    new = function(resource, rsurface)
+        local new = {
+            name = resource.name,
+            type = resource.type,
+        }
+        setmetatable(new, {__index=Resource})
+        if resource.isluaobject then
+            debug("Interpolating from LuaEntityPrototype")
+            new.category = resource.resource_category
+        else
+            new.category = resource.category
+            new.order = resource.order
+            new.richness_base = resource.autoplace.richness_base
+            new.richness_multiplier = resource.autoplace.richness_multiplier
+            new.size_control_multiplier = resource.autoplace.size_control_multiplier
+        end
 
-      --starting={richness=6000, size=14, probability=1},
+        new.allotment = 50
+        new.spawns_per_region = { min=1, max=2 }
+        new.richness=1100
+        new.size={min=12, max=18}
+        new.min_amount=250
+        if rsurface ~= nil then
+            new.surface = rsurface.surface
+        else
+            new.surface = game.surfaces.nauvis
+        end
 
-     -- multi_resource_chance=0.50,
-     -- multi_resource_generic = true,
-     -- multi_resource = nil,
+        --starting={richness=6000, size=14, probability=1},
 
-     -- surface = nil
-    }
-    debug("created resource "..resource.name.." on surface "..new.surface.name)
-    --Resource.max_allotment += new.allotment
+        -- multi_resource_chance=0.50,
+        -- multi_resource_generic = true,
+        -- multi_resource = nil,
 
-    setmetatable(new, {__index=Resource})
-    return new
-  end,
+        -- surface = nil
+        --}
+        debug("created resource "..resource.name.." on surface "..new.surface.name)
+        --Resource.max_allotment += new.allotment
 
-  spawn_ore = function(self, pos, rng)
+        return new
+    end,
+
+    spawn = function(self, pos, rng)
+        if self.category == 'basic-solid' then
+            self:spawn_solid(pos, rng)
+        elseif self.category == 'basic-fluid' then
+            self:spawn_fluid(pos, rng)
+        end
+    end,
+
+    spawn_fluid = function(self, pos, rng)
+        debug("NYI")
+    end,
+
+    spawn_solid = function(self, pos, rng)
         local nballs = 1
         local center = {x = pos.x, y = pos.y}
         local balls = {}
@@ -57,7 +84,7 @@ Resource = {
         --local richness = 1000 -- randomization
 
         -- Generate ore locations
-        local ore_locations = {}
+        local locations = {}
         local area = Metaball.bounding_box(balls)
         local total_influence = 0
         for location in Metaball.iterate(area, balls) do
@@ -65,28 +92,28 @@ Resource = {
                 name = self.name,
                 position = { x = location.x, y = location.y }
             }) then
-                ore_locations[#ore_locations+1] = location
-                total_influence = total_influence + location.total
-            end
+            locations[#locations+1] = location
+            total_influence = total_influence + location.total
         end
-        debug("#loc: "..#ore_locations)
+    end
+    debug("#loc: "..#locations)
 
-        -- Spawn ore at locations
-        local total = 0
-        --local mult = math.abs((res-#ore_locations * min_amount)/ore_locations[#ore_locations].total)
-        --debug("mult: "..mult)
-        for _,location in ipairs(ore_locations) do
-            local settings = {
-                name = 'iron-ore',
-                position = {location.x, location.y},
-                force = game.forces.neutral,
-                amount = math.floor( self.min_amount + location.sum * self.richness),
-            }
-            total = total + settings.amount
-            self.surface.create_entity(settings)
-        end
-        debug("total: "..total)
-    end,
+    -- Spawn ore at locations
+    local total = 0
+    --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
+    --debug("mult: "..mult)
+    for _,location in ipairs(locations) do
+        local settings = {
+            name = self.name,
+            position = {location.x, location.y},
+            force = game.forces.neutral,
+            amount = math.floor( self.min_amount + location.sum * self.richness),
+        }
+        total = total + settings.amount
+        self.surface.create_entity(settings)
+    end
+    debug("total: "..total)
+end,
 
 --  spawn_liquid = function(surface, pos, startingArea, restrictions)
 --    rname = self.name
