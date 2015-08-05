@@ -132,7 +132,7 @@ Metaball = {
   end,
 
   iterate = function(area, balls)
-      debug("enter iterate")
+      --debug("enter iterate")
       local sum = 0;
       total = 0
       x = area.left_top.x;
@@ -148,7 +148,7 @@ Metaball = {
                   x = area.left_top.x;
                   y = y + 1;
                   if y>area.right_bottom.y then
-                      debug("total: "..total)
+                      debug("total force: "..total)
                       return nil
                   end
               end

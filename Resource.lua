@@ -15,7 +15,7 @@ Resource = {
             debug("Interpolating from LuaEntityPrototype")
             new.category = resource.resource_category
         else
-            new.category = resource.category
+            new.category = resource.category or game.entity_prototypes[resource.name].resource_category -- Because basic-solid is missing in demo-resources.lua
             new.order = resource.order
             new.richness_base = resource.autoplace.richness_base
             new.richness_multiplier = resource.autoplace.richness_multiplier
@@ -47,11 +47,17 @@ Resource = {
         return new
     end,
 
-    spawn = function(self, pos, rng)
+    init = function(resource)
+        setmetatable(resource, {__index = Resource } )
+    end,
+
+    spawn = function(self, ...)
         if self.category == 'basic-solid' then
-            self:spawn_solid(pos, rng)
+            self:spawn_solid(...)
         elseif self.category == 'basic-fluid' then
             self:spawn_fluid(pos, rng)
+        else
+            debug(serpent.block(self.category))
         end
     end,
 
@@ -59,7 +65,8 @@ Resource = {
         debug("NYI")
     end,
 
-    spawn_solid = function(self, pos, rng)
+    spawn_solid = function(self, pos, rng, spawn)
+        debug("Entering spawn_solid")
         local nballs = 1
         local center = {x = pos.x, y = pos.y}
         local balls = {}
@@ -77,7 +84,7 @@ Resource = {
             ball:random_walk()
             balls[#balls+1] = ball
         end
-        dump(balls[1].center)
+        --dump(balls[1].center)
         --game.player.print(#balls)
 
         --local max = 200
@@ -105,14 +112,20 @@ Resource = {
     for _,location in ipairs(locations) do
         local settings = {
             name = self.name,
-            position = {location.x, location.y},
+            position = { x = location.x, y = location.y},
             force = game.forces.neutral,
             amount = math.floor( self.min_amount + location.sum * self.richness),
         }
         total = total + settings.amount
-        self.surface.create_entity(settings)
+        if spawn ~= nil then
+            table.insert(spawn, settings)
+        else
+            self.surface.create_entity(settings)
+        end
     end
     debug("total: "..total)
+    --dump(spawn)
+    return spawn
 end,
 
 --  spawn_liquid = function(surface, pos, startingArea, restrictions)

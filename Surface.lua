@@ -26,34 +26,15 @@ RSO_Surface = {
             --settings.remove_enemies = true,
         }
         setmetatable(new, {__index=RSO_Surface})
-        table.insert(global.surfaces, new)
+        --table.insert(global.surfaces, new)
+        global.surfaces[surface.index] = new
         if surface.name == 'nauvis' then
             debug("Loading default resources.")
             new:load_default_resources()
         end
         --dump(global.surfaces)
-        --    dump(new)
+        --dump(new)
         return new
-    end,
-
-    add_resource = function(self, data)
-        debug(data.name)
-        local r = Resource.new(data, self)
-        table.insert(self.resources, r)
-    end,
-
-    load_default_resources = function(self)
-        --dump(global.vanilla)
-        for _,v in ipairs(global.vanilla) do
-            self:add_resource(v)
-        end
-        --for _,v in pairs(game.entity_prototypes) do
-        --    if v.type == 'resource' then
-        --        table.insert(self.resources, Resource.new(v, self))
-        --        --debug(v.name)
-        --        -- add Resource for it
-        --    end
-        --end
     end,
 
     init_all = function()
@@ -64,10 +45,6 @@ RSO_Surface = {
 
     init = function(surface)
         setmetatable(surface, {__index = RSO_Surface })
-        --for _,r in ipairs(surface.regions) do
-        --    Region.init(r)
-        --end
-        --return surface
     end,
 
     load = function(self)
@@ -76,6 +53,39 @@ RSO_Surface = {
         --  Region.load(region)
         --end
     end,
+
+    get = function(arg)
+        if type(arg) == 'string' then
+            for _, s in ipairs(global.surfaces) do
+                if s.name == name then
+                    return s
+                end
+            end
+            if game.surfaces[name] ~= nil then
+                local s = RSO_Surface.new(game.surfaces[name])
+                return s
+            else
+                error("Surface not found")
+                return nil
+            end
+        elseif arg.isluaobject then
+            for _, s in ipairs(global.surfaces) do
+                if s.name == surface.name then
+                    return s
+                end
+            end
+            if game.surfaces[surface.name] ~= nil then
+                local s = RSO_Surface.new(surface)
+                return s
+            else
+                error("Surface not found")
+                return nil
+            end
+        else
+            debug("RSO_Surface.get() called with neither string nor surface")
+        end
+    end,
+
 
     get_by_name = function(name)
         for _, s in ipairs(global.surfaces) do
@@ -112,35 +122,34 @@ RSO_Surface = {
     end,
 
     process_chunk = function(self, chunk)
-        local x = chunk.left_top.x
-        local y = chunk.left_top.y
-        --local region = Region.get_by_chunk(self, chunk)
+        --local x = chunk.left_top.x
+        --local y = chunk.left_top.y
         local region = self:get_region(chunk.left_top)
         self:remove_resources(chunk)
         self:remove_enemies(chunk)
+        self:populate_chunk(chunk.left_top)
+    end,
+
+    get_chunk = function(self, position)
+        local size = Settings.CHUNK_SIZE
+        local rx = math.floor(position.x/size) * size
+        local ry = math.floor(position.y/size) * size
+        return { left_top = {x = rx, y = ry }, right_bottom = { x = rx + size, y = ry + size }, }
     end,
 
     get_region = function(self, position)
         --local size = global.settings.region_size * CHUNK_SIZE
         local size = Settings.REGION_SIZE
-        --debug(size)
         local rx = math.floor(position.x/size) * size
         local ry = math.floor(position.y/size) * size
 
-        for _,r in ipairs(self.regions) do
-            if r.area.left_top.x == rx and r.area.left_top.y == ry then
-                table.insert(r.chunks,chunk)
-                if #r.chunks == global.settings.region_size * global.settings.region_size - 1 then
-                    --debug("region full")
-                end
-                return r
+        --if self.regions[{ x = rx, y = ry }] ~= nil then
+        for _, v in ipairs(self.regions) do
+            if v.area.left_top.x == rx and v.area.left_top.y == ry then
+                return v
             end
         end
-        --debug("new region \nsize: "..size.." x: "..x.." rx: "..rx.." y: "..y.." ry: "..ry)
-        --r = Region.new(RSO_Surface, area)
-        --dump(r)
-        local r = self:create_region({x = rx, y = ry})
-        return r
+        return self:create_region({x = rx, y = ry})
     end,
 
     create_region = function(self, position)
@@ -150,18 +159,66 @@ RSO_Surface = {
             right_bottom = { x = position.x + Settings.REGION_SIZE, y = position.y + Settings.REGION_SIZE },
         }
         region.chunks = {}
+        region.spawns = {}
         table.insert(self.regions, region)
-        --dump(region)
+        --self.regions[position] = region
+        self:calculate_spawns(region)
         return region
     end,
 
     calculate_spawns = function(self, region)
         local offset = {
-            x = region.left_top.x - self.shift.x,
-            y = region.left_top.y - self.shift.y
+            x = region.area.left_top.x - self.shift.x,
+            y = region.area.left_top.y - self.shift.y
         }
-
         region.rng = Random.init(bit32.bxor(offset.x, offset.y))
+        local spawn = {x = 0, y = 0}
+        while true do
+            local resource = self.resources[region.rng:randint(1,#self.resources)]
+            spawn = {
+                x = region.rng:randint(region.area.left_top.x, region.area.right_bottom.x),
+                y = region.rng:randint(region.area.left_top.y, region.area.right_bottom.y),
+            }
+            if self.surface.can_place_entity({position = spawn, name = resource.name}) then
+                --local tmp = {
+                --    position = spawn,
+                --    resource = resource,
+                --}
+                local locations = {}
+                resource:spawn(spawn, rng, locations)
+                --dump(locations)
+                table.insert(region.spawns, locations)
+                break
+            end
+        end
+    end,
+
+    add_resource = function(self, data)
+        debug(data.name)
+        local r = Resource.new(data, self)
+        table.insert(self.resources, r)
+    end,
+
+    load_default_resources = function(self)
+        for _,v in ipairs(global.vanilla) do
+            self:add_resource(v)
+        end
+    end,
+
+    populate_chunk = function(self, position)
+        --dump(position)
+        local chunk = self:get_chunk(position)
+        local region = self:get_region(position)
+        local tmp_chunk
+        for _,spawn in pairs(region.spawns) do
+            for _, location in ipairs(spawn) do
+                --dump(location)
+                tmp_chunk = self:get_chunk(location.position)
+                if tmp_chunk.left_top.x == chunk.left_top.x and tmp_chunk.left_top.y == chunk.left_top.y then
+                    self.surface.create_entity(location)
+                end
+            end
+        end
     end,
 
     remove_resources = function(self, chunk)
