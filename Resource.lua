@@ -65,7 +65,8 @@ Resource = {
         debug("NYI")
     end,
 
-    spawn_solid = function(self, pos, rng, spawn)
+    --spawn_solid = function(self, pos, rng, spawn)
+    spawn_solid = function(self, pos, rng)
         debug("Entering spawn_solid")
         local nballs = 1
         local center = {x = pos.x, y = pos.y}
@@ -107,6 +108,7 @@ Resource = {
 
     -- Spawn ore at locations
     local total = 0
+    local spawn = {}
     --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
     --debug("mult: "..mult)
     for _,location in ipairs(locations) do
@@ -124,7 +126,7 @@ Resource = {
         end
     end
     debug("total: "..total)
-    --dump(spawn)
+    dump(spawn)
     return spawn
 end,
 

@@ -1,5 +1,29 @@
 debug = true
 
+function str2tbl(str)
+    local tbl = {}
+    if #str == 3 then
+        tbl.x = str[1]
+        tbl.y = str[3]
+    elseif #str == 7 then
+        tbl.left_top = { x = str[1], y = str[3] }
+        tbl.right_bottom = { x = str[5], y = str[7] }
+    end
+    return tbl
+end
+
+
+
+function tbl2str(tbl)
+    if tbl.left_top ~= nil then
+        return tbl.left_top.x..','..tbl.left_top.y..'-'..tbl.right_bottom.x..'.'..tbl.right_bottom.y
+    elseif tbl.x ~= nil then
+        return tbl.x..','..tbl.y
+    end
+end
+
+
+
 function message(msg)
     for _,p in ipairs(game.players) do
         p.print(msg)

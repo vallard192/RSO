@@ -21,6 +21,7 @@ RSO_Surface = {
             settings = settings,
             resources = {},
             max_allotment = 0,
+            spawns = {},
             shift = surface.map_gen_settings.shift,
             --settings['remove_resources'] = true,
             --settings.remove_enemies = true,
@@ -143,13 +144,17 @@ RSO_Surface = {
         local rx = math.floor(position.x/size) * size
         local ry = math.floor(position.y/size) * size
 
-        --if self.regions[{ x = rx, y = ry }] ~= nil then
-        for _, v in ipairs(self.regions) do
-            if v.area.left_top.x == rx and v.area.left_top.y == ry then
-                return v
-            end
+        if self.regions[tbl2str({ x = rx, y = ry })] ~= nil then
+            return self.regions[tbl2str({ x = rx, y = ry })]
+        else
+            return self:create_region({x = rx, y = ry})
         end
-        return self:create_region({x = rx, y = ry})
+        --for _, v in ipairs(self.regions) do
+        --    if v.area.left_top.x == rx and v.area.left_top.y == ry then
+        --        return v
+        --    end
+        --end
+        --return self:create_region({x = rx, y = ry})
     end,
 
     create_region = function(self, position)
@@ -159,9 +164,9 @@ RSO_Surface = {
             right_bottom = { x = position.x + Settings.REGION_SIZE, y = position.y + Settings.REGION_SIZE },
         }
         region.chunks = {}
-        region.spawns = {}
-        table.insert(self.regions, region)
-        --self.regions[position] = region
+        --region.spawns = {}
+        --table.insert(self.regions, region)
+        self.regions[tbl2str(position)] = region
         self:calculate_spawns(region)
         return region
     end,
@@ -185,9 +190,10 @@ RSO_Surface = {
                 --    resource = resource,
                 --}
                 local locations = {}
-                resource:spawn(spawn, rng, locations)
-                --dump(locations)
-                table.insert(region.spawns, locations)
+                locations = resource:spawn(spawn, rng)
+                --resource:spawn(spawn, rng, locations)
+                dump(locations)
+                table.insert(self.spawns, locations)
                 break
             end
         end
@@ -210,12 +216,13 @@ RSO_Surface = {
         local chunk = self:get_chunk(position)
         local region = self:get_region(position)
         local tmp_chunk
-        for _,spawn in pairs(region.spawns) do
-            for _, location in ipairs(spawn) do
+        for _,spawn in pairs(self.spawns) do
+            for v, location in ipairs(spawn) do
                 --dump(location)
                 tmp_chunk = self:get_chunk(location.position)
                 if tmp_chunk.left_top.x == chunk.left_top.x and tmp_chunk.left_top.y == chunk.left_top.y then
                     self.surface.create_entity(location)
+                    spawn[v] = nil
                 end
             end
         end

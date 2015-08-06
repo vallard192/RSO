@@ -1,3 +1,19 @@
+Bugs:
+  - RSO_Surface.calculate_spawns() can get stuck in endless loop if there is too much water
+  - resource spaws crossing chunk borders aren't generated properly (check ischunkgenerated)
+
+Notes:
+  - resources at borders need to be added to appropriate region
+  - resource spawns are too small
+  - generating too much drops performance
+  - too much donuts
+  - move n-balls away from center -> cooler spawns
+  - proper water detection when deciding where to spawn
+  - implement spawning of starting resources
+  - resource property detection(starting, infinite)
+  - read peaks when adding resource (if possible) to determine if spawn in starting area
+
+
 Release:
   - implement Resource "class"
   - implement the ore spawn logic - done

@@ -113,4 +113,20 @@ Surface_Interface = {
         local s = RSO_Surface.get_by_name(name)
         debug(serpent.block(data))
     end,
+
+    call = function(name, f, ...)
+        local s = RSO_Surface.get_by_name(name)
+        RSO_Surface[f](s, ...)
+    end,
+
+    get = function(name, property)
+        local s = RSO_Surface.get_by_name(name)
+        dump(s[property])
+    end,
+
+    dump = function(name)
+        local s = RSO_Surface.get_by_name(name)
+        dump(s)
+    end,
+
 }
