@@ -100,35 +100,35 @@ Resource = {
                 name = self.name,
                 position = { x = location.x, y = location.y }
             }) then
-            locations[#locations+1] = location
-            total_influence = total_influence + location.total
+                locations[#locations+1] = location
+                total_influence = total_influence + location.total
+            end
         end
-    end
-    debug("#loc: "..#locations)
+        debug("#loc: "..#locations)
 
-    -- Spawn ore at locations
-    local total = 0
-    local spawn = {}
-    --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
-    --debug("mult: "..mult)
-    for _,location in ipairs(locations) do
-        local settings = {
-            name = self.name,
-            position = { x = location.x, y = location.y},
-            force = game.forces.neutral,
-            amount = math.floor( self.min_amount + location.sum * self.richness),
-        }
-        total = total + settings.amount
-        if spawn ~= nil then
-            table.insert(spawn, settings)
-        else
-            self.surface.create_entity(settings)
+        -- Spawn ore at locations
+        local total = 0
+        local spawn = {}
+        --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
+        --debug("mult: "..mult)
+        for _,location in ipairs(locations) do
+            local settings = {
+                name = self.name,
+                position = { x = location.x, y = location.y},
+                force = game.forces.neutral,
+                amount = math.floor( self.min_amount + location.sum * self.richness),
+            }
+            total = total + settings.amount
+            if spawn ~= nil then
+                table.insert(spawn, settings)
+            else
+                self.surface.create_entity(settings)
+            end
         end
-    end
-    debug("total: "..total)
-    dump(spawn)
-    return spawn
-end,
+        debug("total: "..total)
+        dump(spawn)
+        return spawn
+    end,
 
 --  spawn_liquid = function(surface, pos, startingArea, restrictions)
 --    rname = self.name
