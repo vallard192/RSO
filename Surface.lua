@@ -177,26 +177,41 @@ RSO_Surface = {
             y = region.area.left_top.y - self.shift.y
         }
         region.rng = Random.init(bit32.bxor(offset.x, offset.y))
+        local resource = self.resources[region.rng:randint(1,#self.resources)]
+        local spawn = self:find_spawn_location(region.area, region.rng)
+        local str = ''
+        if spawn ~= nil then
+            local locations = {}
+            locations = resource:spawn(spawn, rng)
+            if locations == nil then
+                dump(spawn)
+            else
+                for _,location in ipairs(locations) do
+                    str = tbl2str(self:get_chunk(location.position).left_top)
+                    if self.spawns[str] == nil then
+                        self.spawns[str] = {}
+                    end
+                    --dump(location)
+                    --debug(tbl2str(self:get_chunk(location.position).left_top))
+                    table.insert(self.spawns[tbl2str(self:get_chunk(location.position).left_top)], location)
+                end
+            end
+
+            --dump(locations)
+            --resource:spawn(spawn, rng, locations)
+        end
+    end,
+
+    find_spawn_location = function(self, area, rng) -- TODO: check for water area, take name of resource
         local spawn = {x = 0, y = 0}
-        while true do
-            local resource = self.resources[region.rng:randint(1,#self.resources)]
-            spawn = {
-                x = region.rng:randint(region.area.left_top.x, region.area.right_bottom.x),
-                y = region.rng:randint(region.area.left_top.y, region.area.right_bottom.y),
-            }
-            if self.surface.can_place_entity({position = spawn, name = resource.name}) then
-                --local tmp = {
-                --    position = spawn,
-                --    resource = resource,
-                --}
-                local locations = {}
-                locations = resource:spawn(spawn, rng)
-                --resource:spawn(spawn, rng, locations)
-                dump(locations)
-                table.insert(self.spawns, locations)
-                break
+        for i=1,50 do
+            spawn.x = rng:randint(area.left_top.x, area.right_bottom.x)
+            spawn.y = rng:randint(area.left_top.y, area.right_bottom.y)
+            if self.surface.can_place_entity({position = spawn, name = 'stone'}) then
+                return spawn
             end
         end
+        return nil
     end,
 
     add_resource = function(self, data)
@@ -216,16 +231,25 @@ RSO_Surface = {
         local chunk = self:get_chunk(position)
         local region = self:get_region(position)
         local tmp_chunk
-        for _,spawn in pairs(self.spawns) do
+        local spawn = self.spawns[tbl2str(chunk.left_top)] 
+        if spawn ~= nil then
             for v, location in ipairs(spawn) do
-                --dump(location)
-                tmp_chunk = self:get_chunk(location.position)
-                if tmp_chunk.left_top.x == chunk.left_top.x and tmp_chunk.left_top.y == chunk.left_top.y then
-                    self.surface.create_entity(location)
-                    spawn[v] = nil
-                end
+                self.surface.create_entity(location)
+                spawn[v] = nil
             end
         end
+        self.spawns[tbl2str(chunk.left_top)] = nil
+
+        --for _,spawn in pairs(self.spawns) do
+        --    for v, location in ipairs(spawn) do
+        --        --dump(location)
+        --        tmp_chunk = self:get_chunk(location.position)
+        --        if tmp_chunk.left_top.x == chunk.left_top.x and tmp_chunk.left_top.y == chunk.left_top.y then
+        --            self.surface.create_entity(location)
+        --            spawn[v] = nil
+        --        end
+        --    end
+        --end
     end,
 
     remove_resources = function(self, chunk)

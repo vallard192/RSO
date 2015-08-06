@@ -53,9 +53,9 @@ Resource = {
 
     spawn = function(self, ...)
         if self.category == 'basic-solid' then
-            self:spawn_solid(...)
+            return self:spawn_solid(...)
         elseif self.category == 'basic-fluid' then
-            self:spawn_fluid(pos, rng)
+            return self:spawn_fluid(...)
         else
             debug(serpent.block(self.category))
         end
@@ -100,35 +100,35 @@ Resource = {
                 name = self.name,
                 position = { x = location.x, y = location.y }
             }) then
-                locations[#locations+1] = location
-                total_influence = total_influence + location.total
-            end
+            locations[#locations+1] = location
+            total_influence = total_influence + location.total
         end
-        debug("#loc: "..#locations)
+    end
+    debug("#loc: "..#locations)
 
-        -- Spawn ore at locations
-        local total = 0
-        local spawn = {}
-        --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
-        --debug("mult: "..mult)
-        for _,location in ipairs(locations) do
-            local settings = {
-                name = self.name,
-                position = { x = location.x, y = location.y},
-                force = game.forces.neutral,
-                amount = math.floor( self.min_amount + location.sum * self.richness),
-            }
-            total = total + settings.amount
-            if spawn ~= nil then
-                table.insert(spawn, settings)
-            else
-                self.surface.create_entity(settings)
-            end
+    -- Spawn ore at locations
+    local total = 0
+    local spawn = {}
+    --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
+    --debug("mult: "..mult)
+    for _,location in ipairs(locations) do
+        local settings = {
+            name = self.name,
+            position = { x = location.x, y = location.y},
+            force = game.forces.neutral,
+            amount = math.floor( self.min_amount + location.sum * self.richness),
+        }
+        total = total + settings.amount
+        if spawn ~= nil then
+            table.insert(spawn, settings)
+        else
+            self.surface.create_entity(settings)
         end
-        debug("total: "..total)
-        dump(spawn)
-        return spawn
-    end,
+    end
+    debug("total: "..total)
+    --dump(spawn)
+    return spawn
+end,
 
 --  spawn_liquid = function(surface, pos, startingArea, restrictions)
 --    rname = self.name
