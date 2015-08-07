@@ -8,6 +8,7 @@ require "prototypes"
 
 
 local function init()
+    --dump(game.surfaces)
     if global.version == nil then
         global.version = 0.1
         global.settings = Settings.new()
@@ -52,7 +53,7 @@ local function on_tick(event)
         k()
     end
     if game.tick == global.tick then
-        dump(global.surfaces)
+        --dump(global.surfaces)
         --s = RSO_Surface.get_surface_by_name('nauvis')
 --        for _,c in s.surface.get_chunks() do
 --            message("this is i:"..i)

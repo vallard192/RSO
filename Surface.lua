@@ -186,14 +186,21 @@ RSO_Surface = {
             if locations == nil then
                 dump(spawn)
             else
-                for _,location in ipairs(locations) do
-                    str = tbl2str(self:get_chunk(location.position).left_top)
-                    if self.spawns[str] == nil then
-                        self.spawns[str] = {}
+                for chunk, spawn in ipairs(locations) do
+                    if self.spawns[chunk] == nil then
+                        self.spawns[chunk] = spawn
+                    else
+                        for k,v in ipairs(spawn) do
+                            self.spawns[chunk][#self.spawns[chunk]+1] = v
+                        end
                     end
-                    --dump(location)
-                    --debug(tbl2str(self:get_chunk(location.position).left_top))
-                    table.insert(self.spawns[tbl2str(self:get_chunk(location.position).left_top)], location)
+                    --str = tbl2str(chunk(location.position).left_top)
+                    --if self.spawns[str] == nil then
+                    --    self.spawns[str] = {}
+                    --end
+                    ----dump(location)
+                    ----debug(tbl2str(self:get_chunk(location.position).left_top))
+                    --table.insert(self.spawns[tbl2str(self:get_chunk(location.position).left_top)], location)
                 end
             end
 
@@ -215,8 +222,8 @@ RSO_Surface = {
     end,
 
     add_resource = function(self, data)
-        debug(data.name)
-        local r = Resource.new(data, self)
+        --debug(data.name)
+        local r = Resource.new(self, data)
         table.insert(self.resources, r)
     end,
 
@@ -250,6 +257,32 @@ RSO_Surface = {
         --        end
         --    end
         --end
+    end,
+
+    build_base = function(self, position, size)
+        dump(position)
+        dump(size)
+        local region = self:get_region(position)
+        local area = {
+            left_top = { position.x - 10, position.y - 10 },
+            right_bottom = { position.x + 10, position.y + 10 },
+        }
+        local pos = {
+            x = region.rng:random(area.left_top.x, area.right_bottom.x),
+            y = region.rng:random(area.left_top.y, area.right_bottom.y),
+            }
+        local counter = 0
+        for i=1,size do
+            counter = 0
+            while not self.surface.can_place_entity({position = pos, name = 'small-biter'}) do
+                counter = counter + 1
+                pos.x = region.rng:random(area.left_top.x, area.right_bottom.x)
+                pos.y = region.rng:random(area.left_top.y, area.right_bottom.y)
+                if counter >10 then break end
+            end
+            self.surface.create_entity({position = pos, name = 'small-biter', force = game.forces.enemy })
+        end
+        self.surface.build_enemy_base(position, size)
     end,
 
     remove_resources = function(self, chunk)

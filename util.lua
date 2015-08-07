@@ -1,4 +1,27 @@
 debug = true
+CHUNK_SIZE = 32
+
+function chunk(...)
+    local arg = {...}
+    local x, y, cx, cy
+    if #arg == 1 then
+        if type(arg[1]) == 'table' then
+            x = arg[1].x or arg[1][1]
+            y = arg[1].y or arg[1][2]
+        else
+            error('wrong type of argument #1 to chunk()')
+        end
+    else
+        x = arg[1]
+        y = arg[2]
+    end
+    cx = math.floor(x/CHUNK_SIZE) * CHUNK_SIZE
+    cy = math.floor(y/CHUNK_SIZE) * CHUNK_SIZE
+    return {
+        left_top = { x = cx, y = cy, },
+        right_bottom = { x = cx + CHUNK_SIZE, y = cy + CHUNK_SIZE },
+    }
+end
 
 function str2tbl(str)
     local tbl = {}

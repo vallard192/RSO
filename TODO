@@ -1,9 +1,10 @@
 Bugs:
+
+Fixed bugs:
   - RSO_Surface.calculate_spawns() can get stuck in endless loop if there is too much water
   - resource spaws crossing chunk borders aren't generated properly (check ischunkgenerated)
 
 Notes:
-  - resources at borders need to be added to appropriate region
   - resource spawns are too small
   - generating too much drops performance
   - too much donuts
@@ -12,13 +13,19 @@ Notes:
   - implement spawning of starting resources
   - resource property detection(starting, infinite)
   - read peaks when adding resource (if possible) to determine if spawn in starting area
+  - Ores will be added in on_init, prepare that other mods are able to add their resources even if surface isn't generated yet (game.surfaces[name] should exist though)
+  - enable/disable map_gen_settings for resources
+  - provide basic resource configuration for prototype ores and data ores, full support only for rso-resource ores
+  - resources will only spawn if the surface has a autoplace_control for that resource and size != none
+
+Implemented Notes:
+  - resources at borders need to be added to appropriate region
+  - implement biter spawn logic (1st iteration)
+  - implement the ore spawn logic - done
 
 
 Release:
-  - implement Resource "class"
-  - implement the ore spawn logic - done
   - implement liquid spawn logic
-  - implement biter spawn logic
 
 Planned Features:
   - Settings GUI
