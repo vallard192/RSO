@@ -25,7 +25,6 @@ Metaball = {
     elseif donut_ratio <0 then
         donut_ratio = 0
     end
-    --debug(donut_ratio)
 
     local new = {
         rng = rng,
@@ -33,8 +32,6 @@ Metaball = {
             x = pos.x,
             y = pos.y,
         },
-        --x = 0, --pos.x,
-        --y = 0, --pos.y,
         radius = {
             out = r_ball * ( 1 - donut_ratio ),
             inner = r_ball * donut_ratio,
@@ -42,14 +39,11 @@ Metaball = {
         },
         shear = rng:random(1/MOD_SHEAR_MAX, MOD_SHEAR_MAX),
         alpha = rng:random(0,math.pi),
-        --donut_ratio = donut_ratio,
         sign = 1,
         edge = rng:random(),
     }
     setmetatable(new, {__index = Metaball})
     new:calculate_area()
-    --dump(new)
-    --debug(serpent.block(new))
     return new
   end,
 
@@ -66,35 +60,12 @@ Metaball = {
       --  shape = ['square', 'donut', 'ellipse']
       --  sharpness = 0..inf sharpness of the blop; <1 means wider; >1 means sharper
       --  neg = true/false; if ture, output Influence will be negative
-
---      if x>4*self.radius.out or y>4*self.radius.out then
---          --return 0;
---      end
       if self:outside(pos) then
           return 0
       end
-
-      --local x_shift = (pos.x - self.x)
-      --local y_shift = (pos.y - self.y)
-      --local x_rot = x_shift * math.cos(self.alpha) - y_shift * math.sin(self.alpha)
-      --local y_rot = y_shift * math.cos(self.alpha) + x_shift * math.sin(self.alpha)
       local rot = rotate(pos, self.center, self.alpha)
       local xs = rot.x/self.shear
       local ys = rot.y*self.shear
---      if not once and counter==2 then
---          debug(serpent.dump(self))
---          debug(serpent.block(pos)..serpent.block(self.center))
---          --debug("xs: "..x_rot.." ys: "..y_rot.." xrot: "..rot.x.." yrot: "..rot.y)
---          debug("xs: "..x_shift.." ys: "..y_shift.." xrot: "..rot.xs.." yrot: "..rot.ys)
---          once = true
---      else
---          counter = counter + 1
---      end
---      local xs = pos.x/self.shear
---      local ys = pos.y*self.shear
---      if xs>2*self.radius.out or ys>2*self.radius.out then
---          --return 0;
---      end
       local circle_r = math.sqrt( xs^2 + ys^2)
       local square_r = ( xs^4 + ys^4)^(1/4)
       local r = math.abs( self.radius.inner - ( 1 - self.edge ) * circle_r - self.edge * square_r ) / self.radius.out
@@ -196,12 +167,12 @@ Metaball = {
   bounding_box = function(balls)
       local area = {
           left_top = {
-              x = 0,
-              y = 0,
+              x = 10e10,
+              y = 10e10,
           },
           right_bottom = {
-              x = 0,
-              y = 0,
+              x = -10e10,
+              y = -10e10,
           },
       }
       for _,ball in ipairs(balls) do
