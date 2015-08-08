@@ -189,11 +189,11 @@ RSO_Surface = {
                 debug('locations == nil')
                 dump(spawn)
             else
-                debug('locations != nil')
+                --debug('locations != nil')
                 --dump(locations)
                 for str,loc in pairs(locations) do
-                    debug('test')
-                    dump(loc)
+                    --debug('test')
+                    --dump(loc)
                     if self.spawns[str] == nil then
                         self.spawns[str] = loc
                     else
