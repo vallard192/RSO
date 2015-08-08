@@ -136,7 +136,7 @@ Resource = {
                         end
                     else
                         amount_total = amount_total + amount
-                        str = tbl2str(chunk(settings.position).left_top)
+                        str = tbl2str(to_chunk(settings.position).left_top)
                         if spawns[str] == nil then
                             spawns[str] = {}
                         end
@@ -205,7 +205,7 @@ Resource = {
                 amount = math.floor( self.min_amount + location.sum * self.richness), -- TODO: refine this formula
             }
             total = total + settings.amount
-            str = tbl2str(chunk(settings.position).left_top)
+            str = tbl2str(to_chunk(settings.position).left_top)
             if spawn[str] == nil then
                 spawn[str] = {}
             end

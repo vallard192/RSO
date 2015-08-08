@@ -138,12 +138,12 @@ RSO_Surface = {
         self:populate_chunk(chunk.left_top)
     end,
 
-    get_chunk = function(self, position)
-        local size = Settings.CHUNK_SIZE
-        local rx = math.floor(position.x/size) * size
-        local ry = math.floor(position.y/size) * size
-        return { left_top = {x = rx, y = ry }, right_bottom = { x = rx + size, y = ry + size }, }
-    end,
+    --get_chunk = function(self, position)
+    --    local size = Settings.CHUNK_SIZE
+    --    local rx = math.floor(position.x/size) * size
+    --    local ry = math.floor(position.y/size) * size
+    --    return { left_top = {x = rx, y = ry }, right_bottom = { x = rx + size, y = ry + size }, }
+    --end,
 
     get_region = function(self, position)
         --local size = global.settings.region_size * CHUNK_SIZE
@@ -163,7 +163,7 @@ RSO_Surface = {
             left_top = { x = position.x, y = position.y },
             right_bottom = { x = position.x + Settings.REGION_SIZE, y = position.y + Settings.REGION_SIZE },
         }
-        region.chunks = {}
+        --region.chunks = {}
         --region.spawns = {}
         self.regions[tbl2str(position)] = region
         self:calculate_spawns(region)
@@ -186,14 +186,19 @@ RSO_Surface = {
             local locations = {}
             locations = resource:spawn(spawn, rng)
             if locations == nil then
+                debug('locations == nil')
                 dump(spawn)
             else
-                for chunk, spawn in ipairs(locations) do
-                    if self.spawns[chunk] == nil then
-                        self.spawns[chunk] = spawn
+                debug('locations != nil')
+                --dump(locations)
+                for str,loc in pairs(locations) do
+                    debug('test')
+                    dump(loc)
+                    if self.spawns[str] == nil then
+                        self.spawns[str] = loc
                     else
-                        for k,v in ipairs(spawn) do
-                            self.spawns[chunk][#self.spawns[chunk]+1] = v
+                        for k,v in ipairs(loc) do
+                            self.spawns[str][#self.spawns[str]+1] = v
                         end
                     end
                 end
@@ -225,7 +230,7 @@ RSO_Surface = {
     end,
 
     populate_chunk = function(self, position)
-        local chunk = chunk(position)
+        local chunk = to_chunk(position)
         local region = self:get_region(position)
         local spawn = self.spawns[tbl2str(chunk.left_top)] 
         if spawn ~= nil then

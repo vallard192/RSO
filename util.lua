@@ -1,7 +1,7 @@
 debug = true
 CHUNK_SIZE = 32
 
-function chunk(...)
+function to_chunk(...)
     local arg = {...}
     local x, y, cx, cy
     if #arg == 1 then
