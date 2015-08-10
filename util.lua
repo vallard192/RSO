@@ -1,5 +1,6 @@
 debug = true
 CHUNK_SIZE = 32
+MARK = true
 
 function to_chunk(...)
     local arg = {...}
@@ -20,7 +21,24 @@ function to_chunk(...)
     return {
         left_top = { x = cx, y = cy, },
         right_bottom = { x = cx + CHUNK_SIZE, y = cy + CHUNK_SIZE },
+        position = { x = cx/CHUNK_SIZE, y = cy/CHUNK_SIZE },
     }
+end
+
+function mark_area(area, surface)
+    if not MARK then
+        return
+    end
+    for x=area.left_top.x,area.right_bottom.x do
+        for y in pairs({area.left_top.y, area.right_bottom.y}) do
+            surface.create_entity({name='stone-wall', position={x,y}})
+        end
+    end
+    for y=area.left_top.y,area.right_bottom.y do
+        for x in pairs({area.left_top.x, area.right_bottom.x}) do
+            surface.create_entity({name='stone-wall', position={x,y}})
+        end
+    end
 end
 
 function str2tbl(str)

@@ -1,4 +1,6 @@
 Bugs:
+  - spawns could extend into already generated chunks which would prevent their generation
+  - crash after loading the game
 
 Fixed bugs:
   - RSO_Surface.calculate_spawns() can get stuck in endless loop if there is too much water

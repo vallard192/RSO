@@ -4,41 +4,124 @@ require "Metaball"
 require "Settings"
 
 -- TODO:
--- implement spawn_liquid
+--
+-- Available data sources:
+-- - rso_data in data prototype
+-- - data prototype
+-- - entity prototype
+--
+-- For the 3 properties (size, freq, richness) there are three settings:
+-- xx_base for the base amount
+-- xx_mod for how much impact map_gen_settings have. in rso_data this should be function(x) return x*2; end for example
+-- xx_dist for the distance modifier (again function of distance in regions)
 
 Resource = {
     new = function(rsurface, ...)
         local new = {
+            category = 'basic-solid',
             rsurface = rsurface,
             surface = rsurface.surface,
+            name = 'dummy',
+            size_base = 15,
+            size_mod = 0,
+            freq_base = 0,
+            freq_mod = 0,
+            richness_base = 0,
+            richness_mod = 0,
+            order = 0, -- Is that needed?
+            start = false, -- Should be table if spawns in starting area are allowed/necessary
+            min_amount = 500,
         }
+        --dump(new)
         setmetatable(new, {__index=Resource})
         new:parse_input(...)
-        new:fill_default()
-        new:read_map_gen_settings()
+        --new:fill_default()
+        --new:read_map_gen_settings()
+        debug(new.richness_base)
         debug("created resource "..new.name.." type "..new.category.." on surface "..new.surface.name)
         return new
     end,
 
     parse_input = function(self, ...)
+        debug('Resource::parse_input called')
         local arg = {...}
         local data = arg[1]
-        local prototype
-        if data.isluaobject and data.type == 'resource' then
-            self:parse_prototype(data)
+        if type(arg[1]) == 'string' then
+            debug(arg[1].." is a string")
+            self:parse_prototype(arg[1])
+            return
+        elseif self:parse_rso(...) then
+            debug('rso data used')
+            return
+        elseif self:parse_data(...) then
+            debug('data successful')
+            return
         else
-            prototype = game.entity_prototypes[data.name]
-            if prototype == nil then
-                dump(data)
-                error("Resource::parse_data(): ERROR Prototype not found!")
-            end
-            self:parse_prototype(prototype)
-            if data.type == 'resource' then
-                self:parse_data(data)
-            elseif data.type == 'rso-resource' then
-                self:parse_rso(data)
+            dump(arg)
+            error('something wrong')
+            return
+        end
+        --if data.isluaobject and data.type == 'resource' then
+        --    self:parse_prototype(data)
+        --else
+        --    prototype = game.entity_prototypes[data.name]
+        --    if prototype == nil then
+        --        dump(data)
+        --        error("Resource::parse_data(): ERROR Prototype not found!")
+        --    end
+        --    self:parse_prototype(prototype)
+        --    if data.type == 'resource' then
+        --        self:parse_data(data)
+        --    elseif data.type == 'rso-resource' then
+        --        self:parse_rso(data)
+        --    end
+        --end
+    end,
+
+    -- If rso_data table is present in the data, copy it to the local table
+    parse_rso = function(self, ...)
+            debug('parsing rso')
+        local arg = {...}
+        local rdata
+        for k,v in pairs(arg) do
+            if v.rso_data ~= nil then
+                for property, setting in pairs(v.rso_data) do
+                    if self[property] ~= nil then
+                        self[property] = setting
+                    end
+                end
+                self.name = v.name
+                self:parse_prototype(self.name)
+                return true
             end
         end
+        return false
+
+    end,
+
+    parse_data = function(self, ...)-- TODO: parse data from data.lua
+        local arg = {...}
+        if #arg==1 then
+            data = arg[1]
+            self.name = data.name
+            self:parse_prototype(self.name)
+            self.order = data.order
+            self.richness_base = data.autoplace.richness_base or 0
+            self.richness_multiplier = data.autoplace.richness_multiplier/10 or 1000
+            self.size_control_multiplier = data.autoplace.size_control_multiplier or 0.04
+        else
+            error('call to parse_data with multiple inputs is not supported yet')
+            return false
+        end
+        return true
+    end,
+
+    parse_prototype = function(self, name)
+        debug('parsing prototype')
+        --dump(name)
+        local prototype = game.entity_prototypes[name]
+        self.type = prototype.type
+        self.category = prototype.resource_category
     end,
 
     fill_default = function(self)-- TODO: define default settings for ore
@@ -61,22 +144,6 @@ Resource = {
         end
     end,
 
-    parse_prototype = function(self, prototype)
-        self.name = prototype.name
-        self.type = prototype.type
-        self.category = prototype.resource_category
-    end,
-
-    parse_rso = function(self, rso_data)
-    end,
-
-    parse_data = function(self, data)-- TODO: parse data from data.lua
-        self.order = data.order
-        self.richness_base = data.autoplace.richness_base
-        self.richness_multiplier = data.autoplace.richness_multiplier
-        self.size_control_multiplier = data.autoplace.size_control_multiplier
-    end,
-
     init = function(resource)
         setmetatable(resource, {__index = Resource } )
     end,
@@ -92,13 +159,13 @@ Resource = {
     end,
 
     spawn_fluid = function(self, pos, rng)
-        debug("NYI")
+        --debug("NYI") Implemented now !
         local nspawns = rng:randint(self.size_base + self.size_mod, self.size_base + 2 * self.size_mod) -- WIP
         local spawns = {}
         local radius = rng:random(Settings.CHUNK_SIZE/2, Settings.CHUNK_SIZE * 3/2)
         local angle = rng:random(0, 2 * math.pi)
         local amount_max = rng:random(nspawns * 0.75, nspawns * 1.25)
-        local multiplier = self.richness * self.richness_mod
+        local multiplier = self.richness_base * self.richness_mod
         local x, y, dist
         local amount_total = 0
         local str
@@ -116,21 +183,22 @@ Resource = {
                     position = { x = x, y = y},
                     name = self.name,
                     force = game.forces.neutral,
-                    amount = math.floor(amount * multiplier),
+                    amount = math.floor(self.richness_base + self.richness_multiplier *amount ),
                 }
-
                 if self.surface.can_place_entity(settings) then
                     local list = {}
-                    for k,_ in ipairs(spawns) do -- Find spawns in the direct vicinity
-                        if spawns[i].position.x > x - 2.75 and spawns[i].position.x < x + 2.75 then
-                            if spawns[i].position.y > y - 2.75 and spawns[i].position.y < y + 2.75 then
-                                list[#list +1] = k
+                    for chnk,chnk_data in pairs(spawns) do -- Find spawns in the direct vicinity
+                        for k,v in pairs(chnk_data) do
+                            if spawns[chnk][k].position.x > x - 2.75 and spawns[chnk][k].position.x < x + 2.75 then
+                                if spawns[chnk][k].position.y > y - 2.75 and spawns[chnk][k].position.y < y + 2.75 then
+                                    list[#list + 1] = {chnk,k}
+                                end
                             end
                         end
                     end
                     if list and #list > 0 then -- If other spawns would prevent spawning, fill them
                         for i=1,#list do
-                            spawns[list[i]].amount =spawns[list[i]].amount + amount/#list
+                            spawns[list[i][1]][list[i][2]].amount = spawns[list[i][1]][list[i][2]].amount + amount/#list
                             amount_total = amount_total + amount
                             break
                         end
@@ -154,7 +222,7 @@ Resource = {
         local nballs = 2
         local center = {x = pos.x, y = pos.y}
         local balls = {}
-        local size = rng:random(self.size.min, self.size.max) -- randomisation needed here
+        local size = rng:random(self.size_base * 0.75, self.size_base * 1.25) -- randomisation needed here
         --local ball_rng = Random.init(game.surfaces['nauvis'].map_gen_settings.seed)
         balls[#balls+1] = Metaball.new(center, size, rng)
         for i=1,nballs do
@@ -176,10 +244,10 @@ Resource = {
         local balls = self:generate_balls(pos,rng)
         --local max = 200
         --local richness = 1000 -- randomization
-
         -- Generate ore locations
         local locations = {}
         local area = Metaball.bounding_box(balls)
+        dump(area)
         local total_influence = 0
         for location in Metaball.iterate(area, balls) do
             if self.surface.can_place_entity({
@@ -190,19 +258,18 @@ Resource = {
             end
         end
         --debug("#loc: "..#locations)
-
         -- Spawn ore at locations
         local total = 0
         local spawn = {}
         local str
         --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
         --debug("mult: "..mult)
-        for _,location in ipairs(locations) do
+        for _,location in pairs(locations) do
             local settings = {
                 name = self.name,
                 position = { x = location.x, y = location.y},
                 force = game.forces.neutral,
-                amount = math.floor( self.min_amount + location.sum * self.richness), -- TODO: refine this formula
+                amount = math.floor( self.richness_base + location.sum * self.richness_multiplier ), -- TODO: refine this formula
             }
             total = total + settings.amount
             str = tbl2str(to_chunk(settings.position).left_top)

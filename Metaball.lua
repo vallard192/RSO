@@ -10,7 +10,7 @@ MOD_SHEAR_MAX = 2
 RANDOM_WALK_MIN = 10
 RANDOM_WALK_MAX = 20
 
-SUM_CUTOFF = 0.01
+SUM_CUTOFF = 0.1
 
 once = false
 counter = 0
@@ -176,7 +176,7 @@ Metaball = {
           },
       }
       for _,ball in ipairs(balls) do
-          area.left_top.x = math.min(area.left_top.x, ball.area.left_top.x)
+          area.left_top.x = math.min(area.left_top.x, ball.area.left_top.x) or ball.area.left_top.x
           area.left_top.y = math.min(area.left_top.y, ball.area.left_top.y)
           area.right_bottom.x = math.max(area.right_bottom.x, ball.area.right_bottom.x)
           area.right_bottom.y = math.max(area.right_bottom.y, ball.area.right_bottom.y)

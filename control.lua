@@ -6,16 +6,18 @@ require "Interface"
 require "util"
 require "prototypes"
 
+VERSION = 0.1
+
 
 local function init()
     --dump(game.surfaces)
     if global.version == nil then
-        global.version = 0.1
+        global.version = VERSION
         global.settings = Settings.new()
         if global.surfaces == nil then
             global.surfaces = {}
-            if global.vanilla == nil then
-                global.vanilla = {}
+            if global.rso_resources == nil then
+                global.rso_resources = {}
             end
             global.on_tick = {}
             global.tick = 60
@@ -27,12 +29,12 @@ end
 local function on_load()
     RSO_Surface.init_all()
     if global.version == nil then
-        global.version = 0.1
+        global.version = VERSION
         global.settings=Settings.new()
-    elseif global.version == 0.1 then
+    elseif global.version == VERSION then
         Settings.init(global.settings)
     end
-    global.tick = game.tick + 60
+    --global.tick = game.tick + 60
     --Surface.table = global.surface
 end
 
@@ -40,28 +42,18 @@ local function on_chunk_generated(event)
     local surface = event.surface
     if event.surface.valid then
         local chunk = event.area
-        s = RSO_Surface.get_by_name(surface.name)
-        --print(s.name)
-        --dump(s)
+        s = RSO_Surface.get_surface(surface.name)
         s:process_chunk(chunk)
     end
 
 end
 
 local function on_tick(event)
-    for _,k in ipairs(global.on_tick) do
-        k()
+    for v,k in pairs(global.on_tick) do
+        k(v)
     end
-    if game.tick == global.tick then
-        --dump(global.surfaces)
-        --s = RSO_Surface.get_surface_by_name('nauvis')
---        for _,c in s.surface.get_chunks() do
---            message("this is i:"..i)
---            dump(c)
---            i=i+1
---        end
-        --s = RSO_Surface.get_surface_by_name('nauvis')
-    end
+    --if game.tick == global.tick then
+    --end
 end
 
 

@@ -23,11 +23,8 @@ RSO_Surface = {
             max_allotment = 0,
             spawns = {},
             shift = surface.map_gen_settings.shift,
-            --settings['remove_resources'] = true,
-            --settings.remove_enemies = true,
         }
         setmetatable(new, {__index=RSO_Surface})
-        --table.insert(global.surfaces, new)
         global.surfaces[surface.index] = new
         if surface.name == 'nauvis' then
             debug("Loading default resources.")
@@ -39,19 +36,22 @@ RSO_Surface = {
     end,
 
     init_all = function()
-        for _, s in ipairs(global.surfaces) do
+        for _, s in pairs(global.surfaces) do
             RSO_Surface.init(s)
         end
     end,
 
     init = function(surface)
         setmetatable(surface, {__index = RSO_Surface })
+        for _,v in pairs(surface.resources) do
+            Resource.init(v)
+        end
     end,
 
     initialize_resources = function(self)
         if self.surface.map_gen_settings and self.surface.map_gen_settings.autoplace_controls ~= nil then
             local ap = self.surface.map_gen_settings.autoplace_controls
-            for _,v in ipairs(ap) do
+            for _,v in pairs(ap) do
                 if v.size ~= 'none' then -- Only load resource if Size > None
                     self:load_resource(v.name)
                     --load resource
@@ -61,32 +61,32 @@ RSO_Surface = {
     end,
 
     load_resource = function(self, name)
-
+        return {}
     end,
 
 
     get_surface = function(arg)
         if type(arg) == 'string' then
-            for _, s in ipairs(global.surfaces) do
-                if s.name == name then
+            for _, s in pairs(global.surfaces) do
+                if s.name == arg then
                     return s
                 end
             end
-            if game.surfaces[name] ~= nil then
-                local s = RSO_Surface.new(game.surfaces[name])
+            if game.surfaces[arg] ~= nil then
+                local s = RSO_Surface.new(game.surfaces[arg])
                 return s
             else
                 error("Surface not found")
                 return nil
             end
         elseif arg.isluaobject then
-            for _, s in ipairs(global.surfaces) do
-                if s.name == surface.name then
+            for _, s in pairs(global.surfaces) do
+                if s.name == arg.name then
                     return s
                 end
             end
-            if game.surfaces[surface.name] ~= nil then
-                local s = RSO_Surface.new(surface)
+            if game.surfaces[arg.name] ~= nil then
+                local s = RSO_Surface.new(arg)
                 return s
             else
                 error("Surface not found")
@@ -99,7 +99,7 @@ RSO_Surface = {
 
 
     get_by_name = function(name)
-        for _, s in ipairs(global.surfaces) do
+        for _, s in pairs(global.surfaces) do
             if s.name == name then
                 return s
             end
@@ -114,7 +114,7 @@ RSO_Surface = {
     end,
 
     get_by_surface = function(surface)
-        for _, s in ipairs(global.surfaces) do
+        for _, s in pairs(global.surfaces) do
             if s.name == surface.name then
                 return s
             end
@@ -191,15 +191,20 @@ RSO_Surface = {
             else
                 --debug('locations != nil')
                 --dump(locations)
-                for str,loc in pairs(locations) do
+                for chnk,loc in pairs(locations) do -- loop over chunks in locations
                     --debug('test')
                     --dump(loc)
-                    if self.spawns[str] == nil then
-                        self.spawns[str] = loc
+                    if self.spawns[chnk] == nil then
+                        self.spawns[chnk] = loc
                     else
-                        for k,v in ipairs(loc) do
-                            self.spawns[str][#self.spawns[str]+1] = v
+                        for k,v in pairs(loc) do
+                            self.spawns[chnk][#self.spawns[chnk]+1] = v
                         end
+                    end
+                    if self.surface.is_chunk_generated(to_chunk(loc[1].position).position) then -- TODO: is_chunk_generated takes chunk not coordinates.
+                        debug(tbl2str(to_chunk(loc[1].position).position).." is already generated, repopulate it")
+                        self:populate_chunk(loc[1].position)
+                        dump(self.spawns[chnk])
                     end
                 end
             end
@@ -219,12 +224,14 @@ RSO_Surface = {
     end,
 
     add_resource = function(self, data)
+        debug('adding resource')
         local r = Resource.new(self, data)
         table.insert(self.resources, r)
     end,
 
     load_default_resources = function(self)
-        for _,v in ipairs(global.vanilla) do
+        --dump(global.rso_resources)
+        for _,v in pairs(global.rso_resources) do
             self:add_resource(v)
         end
     end,
@@ -232,14 +239,20 @@ RSO_Surface = {
     populate_chunk = function(self, position)
         local chunk = to_chunk(position)
         local region = self:get_region(position)
-        local spawn = self.spawns[tbl2str(chunk.left_top)] 
+        local spawn = self.spawns[tbl2str(chunk.left_top)]
+        local ent
         if spawn ~= nil then
-            for v, location in ipairs(spawn) do
-                self.surface.create_entity(location)
-                spawn[v] = nil
+            for v, location in pairs(spawn) do
+                ent = self.surface.create_entity(location)
+                if ent then
+                    spawn[v] = nil
+                end
+            end
+            --dump(spawn)
+            if next(spawn) == nil then
+                self.spawns[tbl2str(chunk.left_top)] = nil
             end
         end
-        self.spawns[tbl2str(chunk.left_top)] = nil
     end,
 
     build_base = function(self, position, size)
@@ -270,12 +283,12 @@ RSO_Surface = {
 
     clear_chunk = function(self, chunk)
         if self.settings.remove_resources then
-            for _,ent in ipairs(self.surface.find_entities_filtered({area=chunk, type='resource'})) do
+            for _,ent in pairs(self.surface.find_entities_filtered({area=chunk, type='resource'})) do
                 ent.destroy()
             end
         end
         if self.settings.remove_enemies then
-            for _,ent in ipairs(self.surface.find_entities_filtered({area=chunk, force='enemy'})) do
+            for _,ent in pairs(self.surface.find_entities_filtered({area=chunk, force='enemy'})) do
                 ent.destroy()
             end
         end
