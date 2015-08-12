@@ -10,6 +10,7 @@ VERSION = 0.1
 
 
 local function init()
+    always_day()
     --dump(game.surfaces)
     if global.version == nil then
         global.version = VERSION
@@ -39,18 +40,19 @@ local function on_load()
 end
 
 local function on_chunk_generated(event)
-    local surface = event.surface
-    if event.surface.valid then
-        local chunk = event.area
-        s = RSO_Surface.get_surface(surface.name)
-        s:process_chunk(chunk)
-    end
+    RSO_Surface.on_chunk_generated(event)
+    --local surface = event.surface
+    --if event.surface.valid then
+    --    local chunk = event.area
+    --    s = RSO_Surface.get_surface(surface.name)
+    --    s:process_chunk(chunk)
+    --end
 
 end
 
 local function on_tick(event)
-    for v,k in pairs(global.on_tick) do
-        k(v)
+    for k,v in pairs(global.on_tick) do
+        v(k)
     end
     --if game.tick == global.tick then
     --end

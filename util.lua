@@ -2,6 +2,17 @@ debug = true
 CHUNK_SIZE = 32
 MARK = true
 
+function delayed_call(func, ticks, ...)
+    local tick = game.tick + ticks
+    --local tmp = function(key)
+    --    if game.tick >= tick then
+    --        func(...)
+    --        global.on_tick[key] = nil
+    --    end
+    --end
+    table.insert(global.on_tick, { func = func, tick = tick, args = ...})
+end
+
 function to_chunk(...)
     local arg = {...}
     local x, y, cx, cy
@@ -16,27 +27,29 @@ function to_chunk(...)
         x = arg[1]
         y = arg[2]
     end
-    cx = math.floor(x/CHUNK_SIZE) * CHUNK_SIZE
-    cy = math.floor(y/CHUNK_SIZE) * CHUNK_SIZE
+    cx = math.floor(x/CHUNK_SIZE)
+    cy = math.floor(y/CHUNK_SIZE)
     return {
-        left_top = { x = cx, y = cy, },
-        right_bottom = { x = cx + CHUNK_SIZE, y = cy + CHUNK_SIZE },
+        left_top = { x = cx * CHUNK_SIZE, y = cy * CHUNK_SIZE, },
+        right_bottom = { x = ( cx + 1 ) * CHUNK_SIZE, y = ( cy + 1 ) * CHUNK_SIZE },
         position = { x = cx/CHUNK_SIZE, y = cy/CHUNK_SIZE },
+        str = tbl2str({ x = cx, y = cy })
     }
 end
 
 function mark_area(area, surface)
     if not MARK then
+        debug("abort mark area")
         return
     end
     for x=area.left_top.x,area.right_bottom.x do
-        for y in pairs({area.left_top.y, area.right_bottom.y}) do
-            surface.create_entity({name='stone-wall', position={x,y}})
+        for _,y in pairs({area.left_top.y, area.right_bottom.y}) do
+            surface.create_entity({name='stone-wall', position={x,y}, force = game.forces.neutral})
         end
     end
     for y=area.left_top.y,area.right_bottom.y do
-        for x in pairs({area.left_top.x, area.right_bottom.x}) do
-            surface.create_entity({name='stone-wall', position={x,y}})
+        for _,x in pairs({area.left_top.x, area.right_bottom.x}) do
+            surface.create_entity({name='stone-wall', position={x,y}, force = game.forces.neutral})
         end
     end
 end
@@ -105,4 +118,11 @@ function rotate(pos, origin, angle)
         xs = x_shift,
         ys = y_shift,
     }
+end
+
+
+function always_day()
+    if debug then
+        game.always_day = true
+    end
 end

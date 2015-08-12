@@ -103,12 +103,15 @@ Resource = {
         local arg = {...}
         if #arg==1 then
             data = arg[1]
+            local ap = data.autoplace
             self.name = data.name
             self:parse_prototype(self.name)
             self.order = data.order
-            self.richness_base = data.autoplace.richness_base or 0
-            self.richness_multiplier = data.autoplace.richness_multiplier/10 or 1000
-            self.size_control_multiplier = data.autoplace.size_control_multiplier or 0.04
+            self.richness_base = ap.richness_base or 0
+            self.richness_multiplier = ap.richness_multiplier/10 or 1000
+            self.size_control_multiplier = ap.size_control_multiplier or 0.04
+            self.autoplace_control = ap.control
+            self:read_map_gen_settings()
         else
             error('call to parse_data with multiple inputs is not supported yet')
             return false
@@ -124,23 +127,24 @@ Resource = {
         self.category = prototype.resource_category
     end,
 
-    fill_default = function(self)-- TODO: define default settings for ore
-        self.min_amount = self.min_amount or global.settings.resource_defaults.min_amount
-        self.richness = self.richness or global.settings.resource_defaults.richness
-        self.size = self.size or global.settings.resource_defaults.size
-        self.size_base = 1
-    end,
+    --fill_default = function(self)-- TODO: define default settings for ore
+    --    self.min_amount = self.min_amount or global.settings.resource_defaults.min_amount
+    --    self.richness = self.richness or global.settings.resource_defaults.richness
+    --    self.size = self.size or global.settings.resource_defaults.size
+    --    self.size_base = 1
+    --end,
 
     read_map_gen_settings = function(self)
-        local map_gen_settings = self.surface.map_gen_settings.autoplace_controls[self.name]
-        if map_gen_settings == nil then
+        local map_gen_settings = self.surface.map_gen_settings.autoplace_controls[self.autoplace_control]
+        if map_gen_settings ~= nil then
             self.freq_mod = Settings.FREQUENCY_MOD[map_gen_settings.frequency]
-            self.size_mod = Settings.FREQUENCY_MOD[map_gen_settings.size]
-            self.richness_mod = Settings.FREQUENCY_MOD[map_gen_settings.richness]
+            self.size_mod = (Settings.SIZE_MOD[map_gen_settings.size] > 0) and 2^( (Settings.SIZE_MOD[map_gen_settings.size]-3)/2) or 0
+            self.richness_mod = Settings.RICHNESS_MOD[map_gen_settings.richness]
+            self.size_mod = 2
         else
             self.freq_mod = 3
-            self.size_mod = 3
-            self.richness_mod = 3
+            self.size_mod = 1
+            self.richness_mod = 1
         end
     end,
 
@@ -162,6 +166,7 @@ Resource = {
         --debug("NYI") Implemented now !
         local nspawns = rng:randint(self.size_base + self.size_mod, self.size_base + 2 * self.size_mod) -- WIP
         local spawns = {}
+        local dist_mod = self.surface.get_tileproperties(pos.x, pos.y).tier_from_start
         local radius = rng:random(Settings.CHUNK_SIZE/2, Settings.CHUNK_SIZE * 3/2)
         local angle = rng:random(0, 2 * math.pi)
         local amount_max = rng:random(nspawns * 0.75, nspawns * 1.25)
@@ -183,7 +188,7 @@ Resource = {
                     position = { x = x, y = y},
                     name = self.name,
                     force = game.forces.neutral,
-                    amount = math.floor(self.richness_base + self.richness_multiplier *amount ),
+                    amount = math.floor(self.richness_base + amount * self.richness_multiplier ),
                 }
                 if self.surface.can_place_entity(settings) then
                     local list = {}
@@ -204,7 +209,7 @@ Resource = {
                         end
                     else
                         amount_total = amount_total + amount
-                        str = tbl2str(to_chunk(settings.position).left_top)
+                        str = to_chunk(settings.position).str
                         if spawns[str] == nil then
                             spawns[str] = {}
                         end
@@ -219,10 +224,10 @@ Resource = {
     end,
 
     generate_balls = function(self, pos, rng)
-        local nballs = 2
+        local nballs = 3
         local center = {x = pos.x, y = pos.y}
         local balls = {}
-        local size = rng:random(self.size_base * 0.75, self.size_base * 1.25) -- randomisation needed here
+        local size = self:distance_mod(pos) * self.size_mod * rng:random(self.size_base * 0.75, self.size_base * 1.25) -- randomisation needed here
         --local ball_rng = Random.init(game.surfaces['nauvis'].map_gen_settings.seed)
         balls[#balls+1] = Metaball.new(center, size, rng)
         for i=1,nballs do
@@ -239,45 +244,47 @@ Resource = {
         return balls
     end,
 
+    distance_mod = function(self, pos)
+        local tier = self.surface.get_tileproperties(pos.x, pos.y).tier_from_start + 1
+        local dist_log = math.log(tier)/Settings.DISTANCE_SCALE
+        local dist_exp = math.exp(tier / ( 10 * Settings.DISTANCE_SCALE ) ) - 1
+        return math.min(dist_log, dist_exp) + 1
+    end,
+
+
     --spawn_solid = function(self, pos, rng, spawn)
     spawn_solid = function(self, pos, rng)
         local balls = self:generate_balls(pos,rng)
-        --local max = 200
-        --local richness = 1000 -- randomization
+        local dist_mod = self:distance_mod(pos)
         -- Generate ore locations
         local locations = {}
         local area = Metaball.bounding_box(balls)
-        dump(area)
+        mark_area(area, self.surface)
+        local settings, str
+        local total = 0
         local total_influence = 0
         for location in Metaball.iterate(area, balls) do
-            if self.surface.can_place_entity({
-                name = self.name,
-                position = { x = location.x, y = location.y } }) then
-                locations[#locations+1] = location
-                total_influence = total_influence + location.total
-            end
-        end
-        --debug("#loc: "..#locations)
-        -- Spawn ore at locations
-        local total = 0
-        local spawn = {}
-        local str
-        --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
-        --debug("mult: "..mult)
-        for _,location in pairs(locations) do
-            local settings = {
+            settings = {
                 name = self.name,
                 position = { x = location.x, y = location.y},
                 force = game.forces.neutral,
-                amount = math.floor( self.richness_base + location.sum * self.richness_multiplier ), -- TODO: refine this formula
+                amount = math.floor( self.richness_base + location.sum * self.richness_multiplier * dist_mod ),
             }
-            total = total + settings.amount
-            str = tbl2str(to_chunk(settings.position).left_top)
-            if spawn[str] == nil then
-                spawn[str] = {}
+            if self.surface.can_place_entity(settings) then
+                total_influence = total_influence + location.total
+                total = total + settings.amount
+                str = to_chunk(settings.position).str
+                if locations[str] == nil then
+                    locations[str] = {}
+                end
+                locations[str][#locations[str]+1] = settings
             end
-            spawn[str][#spawn[str]+1] = settings
         end
-        return spawn
+        debug("dist mod:"..dist_mod)
+        --debug("#loc: "..#locations)
+        -- Spawn ore at locations
+        --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
+        --debug("mult: "..mult)
+        return locations
     end,
 }

@@ -3,6 +3,7 @@ require 'util'
 Settings = {
     CHUNK_SIZE = 32;
     REGION_SIZE = 0;
+    DISTANCE_SCALE = 5;
     FREQUENCY_MOD = {
         ['very-low'] = 1,
         low = 2,
@@ -19,11 +20,11 @@ Settings = {
         ['very-big'] = 5,
     };
     RICHNESS_MOD = {
-        ['very-poor'] = 1,
-        poor = 2,
-        regular = 3,
-        good = 4,
-        ['very-good'] = 5,
+        ['very-poor'] = 2^(-1),
+        poor = 2^(-1/2),
+        regular = 1,
+        good = 2^(1/2),
+        ['very-good'] = 2,
     };
 
   new = function()
@@ -38,7 +39,6 @@ Settings = {
         resource_defaults = resource_defaults,
     }
     Settings.REGION_SIZE = new.region_size * Settings.CHUNK_SIZE
-    --RES.max_allotment += new.allotment
 
     setmetatable(new, {__index=Settings})
     return new
