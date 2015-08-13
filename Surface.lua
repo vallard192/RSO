@@ -55,20 +55,15 @@ RSO_Surface = {
     end,
 
     on_chunk_generated = function(event)
-        local surface = event.surface
-        if event.surface.valid then
-            local s = RSO_Surface.get_surface(surface.name)
-            s:process_chunk(event.area.left_top)
-        else
-            error("surface is not vaild")
-        end
+        local s = RSO_Surface.get_surface(event.surface.name)
+        s:process_chunk(event.area.left_top)
     end,
 
-    on_tick = function()
-        for _,s in pairs(global.surfaces) do
-            s:populate_chunks()
-        end
-    end,
+    --on_tick = function()
+    --    for _,s in pairs(global.surfaces) do
+    --        s:populate_chunks()
+    --    end
+    --end,
 
     get_surface = function(arg)
         if type(arg) == 'string' then
@@ -120,11 +115,13 @@ RSO_Surface = {
         if self.regions[tbl2str({ x = rx, y = ry })] ~= nil then
             return self.regions[tbl2str({ x = rx, y = ry })]
         else
-            return self:create_region({x = rx, y = ry})
+            --debug(self.regions[tbl2str({ x = rx, y = ry })].center.x)
+            return self:create_region({x = rx * size , y = ry * size})
         end
     end,
 
     create_region = function(self, position)
+        --debug("Surface::create_region @ "..tbl2str(position))
         local size = Settings.REGION_SIZE
         local rx = math.floor(position.x/size)
         local ry = math.floor(position.y/size)
@@ -133,13 +130,12 @@ RSO_Surface = {
                 left_top = { x = rx * size, y = ry * size },
                 right_bottom = { x = ( rx + 1 ) * size, y = ( ry + 1 ) * size },
             },
-            center = { x = rx * size + size/2, y = ry * size + size/2 }, 
+            center = { x = rx * size + size/2, y = ry * size + size/2 },
+            chunks = {},
         }
         --self.surface.request_to_generate_chunks(region.center, 1)
-        --region.chunks = {}
-        --region.spawns = {}
         self.regions[tbl2str({x=rx, y=ry})] = region
-        --local chunk = to_chunk(position)
+        --debug(self.regions[tbl2str({ x = rx, y = ry })].center.x)
         --for x=region.area.left_top.x+CHUNK_SIZE,region.area.right_bottom.x-CHUNK_SIZE,CHUNK_SIZE do
         --    for y=region.area.left_top.y+CHUNK_SIZE,region.area.right_bottom.y-CHUNK_SIZE,CHUNK_SIZE do
         --         self.surface.create_entity({name='stone', position={x=x,y=y}, amount = 0})
@@ -188,34 +184,42 @@ RSO_Surface = {
             return
         end
         local resource = self.resources[region.rng:randint(1,#self.resources)]
+        for _,v in pairs(self.resources) do
+            if v.name == 'crude-oil' then
+                resource = v
+            end
+        end
         local spawn = self:find_spawn_location(region.area, region.rng)
         local str = ''
-        if spawn ~= nil then
-            local locations = resource:spawn(spawn, rng)
-            if locations == nil then
-                debug('locations == nil')
-                dump(spawn)
+        if spawn == nil then
+            debug("no location to spawn found")
+            return 
+        end
+        local locations = resource:spawn(spawn, rng)
+        if locations == nil then
+            debug('locations == nil')
+            dump(spawn)
+            return
+        end
+        for chnk,loc in pairs(locations) do -- loop over chunks in locations
+            if self.spawns[chnk] == nil then
+                self.spawns[chnk] = loc
             else
-                --debug('locations != nil')
-                --dump(locations)
-                for chnk,loc in pairs(locations) do -- loop over chunks in locations
-                    --debug('test')
-                    --dump(loc)
-                    if self.spawns[chnk] == nil then
-                        self.spawns[chnk] = loc
-                    else
-                        for k,v in pairs(loc) do
-                            --self.surface.create_entity(v)
-                            self.spawns[chnk][#self.spawns[chnk]+1] = v
-                        end
-                    end
-                    if self.surface.is_chunk_generated(to_chunk(loc[1].position).position) then -- TODO: is_chunk_generated takes chunk not coordinates.
-                        --debug(to_chunk(loc[1].position).str.." is already generated, repopulate it")
-                        self:populate_chunk(loc[1].position)
-                        --dump(self.spawns[chnk])
-                    end
+                debug('adding to existing spawn location')
+                for k,v in pairs(loc) do
+                    self.spawns[chnk][#self.spawns[chnk]+1] = v
                 end
             end
+            if self.chunks[chnk] == GEN_FINISHED then
+                debug("populate_chunk called manually")
+                debug("chnk "..chnk.." loc[1].pos "..to_chunk(loc[1].position).str)
+                self:populate_chunk(loc[1].position)
+            end
+            --if self.surface.is_chunk_generated(to_chunk(loc[1].position).position) then -- TODO: is_chunk_generated takes chunk not coordinates.
+            --    --debug(to_chunk(loc[1].position).str.." is already generated, repopulate it")
+                --self:populate_chunk(loc[1].position)
+            --    --dump(self.spawns[chnk])
+            --end
         end
     end,
 
@@ -270,15 +274,9 @@ RSO_Surface = {
             else
                 --debug("Gen not finished, waiting")
                 --self.surface.request_to_generate_chunks(position, 0)
-                --delayed_call(RSO_Surface.populate_chunk, GEN_TICK_WAIT, self, position)
                 local count = 0
                 local tick = game.tick + GEN_TICK_WAIT
                 local tmp = function(key)
-                    --count = count + 1
-                    --if count%100 == 0 then
-                    --    debug(count.." position "..chunk.str.." key "..key)
-                    --end
-                    --debug("waiting")
                     --if game.tick > tick and self.chunks[chunk.str] == GEN_FINISHED then
                     if game.tick > tick then
                         self:populate_chunk(position)
@@ -293,6 +291,15 @@ RSO_Surface = {
                 self.spawns[chunk.str] = nil
             end
         else
+                    --for chnk,chnk_data in pairs(spawns) do -- Find spawns in the direct vicinity
+                    --    for k,v in pairs(chnk_data) do
+                    --        if spawns[chnk][k].position.x > x - 2.75 and spawns[chnk][k].position.x < x + 2.75 then
+                    --            if spawns[chnk][k].position.y > y - 2.75 and spawns[chnk][k].position.y < y + 2.75 then
+                    --                list[#list + 1] = {chnk,k}
+                    --            end
+                    --        end
+                    --    end
+                    --end
             --debug(chunk.str)
         end
     end,
@@ -328,6 +335,7 @@ RSO_Surface = {
         if self.settings.remove_resources then
             for _,ent in pairs(self.surface.find_entities_filtered({area=chunk, type='resource'})) do
                 debug("removed "..ent.name.." from position "..tbl2str(ent.position))
+                debug("state of chunk: "..self.chunks[to_chunk(ent.position).str])
                 ent.destroy()
             end
         end

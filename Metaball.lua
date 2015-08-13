@@ -119,7 +119,7 @@ Metaball = {
                   x = area.left_top.x;
                   y = y + 1;
                   if y>area.right_bottom.y then
-                      debug("total force: "..total)
+                      --debug("total force: "..total)
                       return nil
                   end
               end

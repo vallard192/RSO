@@ -1,6 +1,6 @@
 debug = true
 CHUNK_SIZE = 32
-MARK = true
+MARK = false
 
 function delayed_call(func, ticks, ...)
     local tick = game.tick + ticks

@@ -23,7 +23,7 @@ Resource = {
             surface = rsurface.surface,
             name = 'dummy',
             size_base = 15,
-            size_mod = 0,
+            size_mod = 1,
             freq_base = 0,
             freq_mod = 0,
             richness_base = 0,
@@ -165,7 +165,7 @@ Resource = {
     spawn_fluid = function(self, pos, rng)
         --debug("NYI") Implemented now !
         local nspawns = rng:randint(self.size_base + self.size_mod, self.size_base + 2 * self.size_mod) -- WIP
-        local spawns = {}
+        local locations = {}
         local dist_mod = self.surface.get_tileproperties(pos.x, pos.y).tier_from_start
         local radius = rng:random(Settings.CHUNK_SIZE/2, Settings.CHUNK_SIZE * 3/2)
         local angle = rng:random(0, 2 * math.pi)
@@ -174,6 +174,7 @@ Resource = {
         local x, y, dist
         local amount_total = 0
         local str
+        debug("oil spawn")
         while amount_total < amount_max do
             local amount = 0.5 + rng:random()
             if amount + amount_total > amount_max then
@@ -182,46 +183,55 @@ Resource = {
             for j=1,5 do
                 dist = rng:random(0.1 * radius, radius)
                 angle = angle + rng:random(0, math.pi/2)
-                x = pos.x + dist * math.cos(angle)
-                y = pos.y + dist * math.sin(angle)
+                x = math.floor(pos.x + dist * math.cos(angle))
+                y = math.floor(pos.y + dist * math.sin(angle))
                 settings = {
                     position = { x = x, y = y},
                     name = self.name,
                     force = game.forces.neutral,
                     amount = math.floor(self.richness_base + amount * self.richness_multiplier ),
                 }
-                if true then
-                --if self.s0rface.can_place_entity(settings) then
-                    local list = {}
-                    for chnk,chnk_data in pairs(spawns) do -- Find spawns in the direct vicinity
-                        for k,v in pairs(chnk_data) do
-                            if spawns[chnk][k].position.x > x - 2.75 and spawns[chnk][k].position.x < x + 2.75 then
-                                if spawns[chnk][k].position.y > y - 2.75 and spawns[chnk][k].position.y < y + 2.75 then
-                                    list[#list + 1] = {chnk,k}
-                                end
-                            end
-                        end
+                --if true then
+                if self.surface.can_place_entity(settings) then
+                    amount_total = amount_total + amount
+                    str = to_chunk(settings.position).str
+                    if locations[str] == nil then
+                        locations[str] = {}
                     end
-                    if list and #list > 0 then -- If other spawns would prevent spawning, fill them
-                        for i=1,#list do
-                            spawns[list[i][1]][list[i][2]].amount = spawns[list[i][1]][list[i][2]].amount + amount/#list
-                            amount_total = amount_total + amount
-                            break
-                        end
-                    else
-                        amount_total = amount_total + amount
-                        str = to_chunk(settings.position).str
-                        if spawns[str] == nil then
-                            spawns[str] = {}
-                        end
-                        spawns[str][#spawns[str]+1] = settings
-                        --spawns[tbl2str({x=x, y=y})] = settings
-                        break
-                    end
+                    locations[str][#locations[str]+1] = settings
+                    --locations[tbl2str({x=x, y=y})] = settings
+                    break
+                    --local list = {}
+                    --for chnk,chnk_data in pairs(locations) do -- Find spawns in the direct vicinity
+                    --    for k,v in pairs(chnk_data) do
+                    --        if locations[chnk][k].position.x > x - 2.75 and locations[chnk][k].position.x < x + 2.75 then
+                    --            if locations[chnk][k].position.y > y - 2.75 and locations[chnk][k].position.y < y + 2.75 then
+                    --                list[#list + 1] = {chnk,k}
+                    --            end
+                    --        end
+                    --    end
+                    --end
+                    --if list and #list > 0 then -- If other locations would prevent spawning, fill them
+                    --    for i=1,#list do
+                    --        locations[list[i][1]][list[i][2]].amount = locations[list[i][1]][list[i][2]].amount + amount/#list
+                    --        amount_total = amount_total + amount
+                    --        break
+                    --    end
+                    --else
+                    --    amount_total = amount_total + amount
+                    --    str = to_chunk(settings.position).str
+                    --    if locations[str] == nil then
+                    --        locations[str] = {}
+                    --    end
+                    --    locations[str][#locations[str]+1] = settings
+                    --    --locations[tbl2str({x=x, y=y})] = settings
+                    --    break
+                    --end
                 end -- END can_place_entity
             end
         end
-        return spawns
+        --debug(serpent.block(locations))
+        return locations
     end,
 
     generate_balls = function(self, pos, rng)
@@ -260,15 +270,11 @@ Resource = {
         -- Generate ore locations
         local locations = {}
         local area = Metaball.bounding_box(balls)
-        mark_area(area, self.surface)
+        --mark_area(area, self.surface)
         local settings, str
         local total = 0
         local total_influence = 0
         for location in Metaball.iterate(area, balls) do
-            if location.x == -30 and location.y == -290 then
-                debug('test location')
-                dump(location)
-            end
             settings = {
                 name = self.name,
                 position = { x = location.x, y = location.y},
@@ -277,9 +283,6 @@ Resource = {
             }
             if true then
             --if self.surface.can_place_entity(settings) then
-                if location.x == -30 and location.y == -290 then
-                    debug('can place')
-                end
                 total_influence = total_influence + location.total
                 total = total + settings.amount
                 str = to_chunk(settings.position).str
@@ -287,15 +290,9 @@ Resource = {
                     locations[str] = {}
                 end
                 locations[str][#locations[str]+1] = settings
-            else
-                if location.x == -30 and location.y == -290 then
-                    local ents = self.surface.find_entities({{location.x - 1, location.y -1},{location.x+1, location.y+1}})
-                    debug("can't place")
-                    dump(ents)
-                end
             end
         end
-        debug("dist mod:"..dist_mod)
+        --debug("dist mod:"..dist_mod)
         --debug("#loc: "..#locations)
         -- Spawn ore at locations
         --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
