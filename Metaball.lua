@@ -4,7 +4,7 @@ MOD_SIZE_MIN = 0.5
 MOD_SIZE_MAX = 1
 MOD_DONUT_RANGE_MIN = -1
 MOD_DONUT_RANGE_MAX = 1
-MOD_DONUT_MAX = 2/3
+MOD_DONUT_MAX = 1/2
 MOD_SHEAR_MAX = 2
 
 RANDOM_WALK_MIN = 10
@@ -111,7 +111,7 @@ Metaball = {
 
       return function()
           --debug("iterating")
-          --debug(x,y)
+          --debug(x..","..y)
           found = false;
           while found == false do
               x = x + 1;

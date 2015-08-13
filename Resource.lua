@@ -22,7 +22,7 @@ Resource = {
             rsurface = rsurface,
             surface = rsurface.surface,
             name = 'dummy',
-            size_base = 15,
+            size_base = 12,
             size_mod = 1,
             freq_base = 0,
             freq_mod = 0,
@@ -43,7 +43,7 @@ Resource = {
     end,
 
     parse_input = function(self, ...)
-        debug('Resource::parse_input called')
+        --debug('Resource::parse_input called')
         local arg = {...}
         local data = arg[1]
         if type(arg[1]) == 'string' then
@@ -80,7 +80,7 @@ Resource = {
 
     -- If rso_data table is present in the data, copy it to the local table
     parse_rso = function(self, ...)
-            debug('parsing rso')
+            --debug('parsing rso')
         local arg = {...}
         local rdata
         for k,v in pairs(arg) do
@@ -120,7 +120,7 @@ Resource = {
     end,
 
     parse_prototype = function(self, name)
-        debug('parsing prototype')
+        --debug('parsing prototype')
         --dump(name)
         local prototype = game.entity_prototypes[name]
         self.type = prototype.type
@@ -140,7 +140,7 @@ Resource = {
             self.freq_mod = Settings.FREQUENCY_MOD[map_gen_settings.frequency]
             self.size_mod = (Settings.SIZE_MOD[map_gen_settings.size] > 0) and 2^( (Settings.SIZE_MOD[map_gen_settings.size]-3)/2) or 0
             self.richness_mod = Settings.RICHNESS_MOD[map_gen_settings.richness]
-            self.size_mod = 2
+            --self.size_mod = 2
         else
             self.freq_mod = 3
             self.size_mod = 1
@@ -164,7 +164,7 @@ Resource = {
 
     spawn_fluid = function(self, pos, rng)
         --debug("NYI") Implemented now !
-        local nspawns = rng:randint(self.size_base + self.size_mod, self.size_base + 2 * self.size_mod) -- WIP
+        local nspawns = rng:randint(self.size_base * self.size_mod, self.size_base * 2 * self.size_mod) -- WIP
         local locations = {}
         local dist_mod = self.surface.get_tileproperties(pos.x, pos.y).tier_from_start
         local radius = rng:random(Settings.CHUNK_SIZE/2, Settings.CHUNK_SIZE * 3/2)
@@ -174,7 +174,7 @@ Resource = {
         local x, y, dist
         local amount_total = 0
         local str
-        debug("oil spawn")
+        --debug("oil spawn")
         while amount_total < amount_max do
             local amount = 0.5 + rng:random()
             if amount + amount_total > amount_max then
@@ -270,11 +270,14 @@ Resource = {
         -- Generate ore locations
         local locations = {}
         local area = Metaball.bounding_box(balls)
+        --dump(area)
         --mark_area(area, self.surface)
         local settings, str
         local total = 0
         local total_influence = 0
         for location in Metaball.iterate(area, balls) do
+            --debug("iterating")
+            --debug(location.sum)
             settings = {
                 name = self.name,
                 position = { x = location.x, y = location.y},
@@ -292,12 +295,10 @@ Resource = {
                 locations[str][#locations[str]+1] = settings
             end
         end
-        --debug("dist mod:"..dist_mod)
+        --dump(locations)
+        debug("dist mod:"..dist_mod)
         --debug("#loc: "..#locations)
         -- Spawn ore at locations
-        --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
-        --debug("mult: "..mult)
-        --dump(locations[to_chunk({-30,-290}).str])
         return locations
     end,
 }

@@ -4,7 +4,8 @@ require 'util'
 require "Resource"
 require "Settings"
 
-GEN_REQUESTED = 1
+GEN_REQUESTED = 0
+GEN_GENERATING = 1
 GEN_FINISHED = 2
 GEN_TICK_WAIT = 200
 
@@ -181,19 +182,15 @@ RSO_Surface = {
         }
         region.rng = Random.init(bit32.bxor(offset.x, offset.y))
         if #self.resources == 0 then
+            debug("no resources to spawn")
             return
         end
         local resource = self.resources[region.rng:randint(1,#self.resources)]
-        for _,v in pairs(self.resources) do
-            if v.name == 'crude-oil' then
-                resource = v
-            end
-        end
         local spawn = self:find_spawn_location(region.area, region.rng)
         local str = ''
         if spawn == nil then
             debug("no location to spawn found")
-            return 
+            return
         end
         local locations = resource:spawn(spawn, rng)
         if locations == nil then
@@ -205,14 +202,14 @@ RSO_Surface = {
             if self.spawns[chnk] == nil then
                 self.spawns[chnk] = loc
             else
-                debug('adding to existing spawn location')
+                --debug('adding to existing spawn location')
                 for k,v in pairs(loc) do
                     self.spawns[chnk][#self.spawns[chnk]+1] = v
                 end
             end
             if self.chunks[chnk] == GEN_FINISHED then
-                debug("populate_chunk called manually")
-                debug("chnk "..chnk.." loc[1].pos "..to_chunk(loc[1].position).str)
+                --debug("populate_chunk called manually")
+                --debug("chnk "..chnk.." loc[1].pos "..to_chunk(loc[1].position).str)
                 self:populate_chunk(loc[1].position)
             end
             --if self.surface.is_chunk_generated(to_chunk(loc[1].position).position) then -- TODO: is_chunk_generated takes chunk not coordinates.
@@ -224,29 +221,29 @@ RSO_Surface = {
     end,
 
     find_spawn_location = function(self, area, rng) -- TODO: check for water area, take name of resource
-        local spawn = {x = 0, y = 0}
+        local spawn = nil
+        local max_elevation = 0
+        local elevation
+        local x,y
         for i=1,50 do
-            spawn.x = rng:randint(area.left_top.x, area.right_bottom.x)
-            spawn.y = rng:randint(area.left_top.y, area.right_bottom.y)
-            if self.surface.can_place_entity({position = spawn, name = 'stone'}) then
-                return spawn
+            x = rng:randint(area.left_top.x, area.right_bottom.x)
+            y = rng:randint(area.left_top.y, area.right_bottom.y)
+            --if self.surface.can_place_entity({position = spawn, name = 'stone'}) then
+            elevation = self.surface.get_tileproperties(x,y).elevation
+            if elevation > max_elevation then
+                max_elevation = elevation
+                spawn = { x = x, y = y }
             end
         end
-        return nil
+        return spawn
     end,
 
     process_chunk = function(self, position)
         local region = self:get_region(position)
+        self.chunks[to_chunk(position).str] = GEN_GENERATING
         self:clear_chunk(position)
         self.chunks[to_chunk(position).str] = GEN_FINISHED
         self:populate_chunk(position)
-        --    local set = {
-        --        position = { x = chunk.right_bottom.x + 2, y = chunk.left_top.y },
-        --        name = 'stone-wall',
-        --        force = game.forces.enemy
-        --    }
-        --    surface.create_entity(set)
-        --    surface.create_entity(set)
     end,
 
     populate_chunk = function(self, position)
@@ -260,18 +257,27 @@ RSO_Surface = {
                 for v, location in pairs(spawn) do
                     if self.surface.can_place_entity(location) then
                         ent = self.surface.create_entity(location)
-                        if location.x == -30 and location.y == -290 then
-                            dump(ent)
-                        end
                         if ent ~= nil then
                             spawn[v] = nil
                         end
-                    else
+                    end -- endif can_place_entity
+                end -- endfor pairs(spawn)
+                if #spawn > 0 then
+                    for v, location in pairs(spawn) do
+                        ents = self.surface.find_entities_filtered{
+                            area = {
+                                {location.position.x-2.75, location.position.y-2.75},
+                                {location.position.x+2.75, location.position.y+2.75}
+                            },
+                            name = location.name
+                        }
+                        for _,ent in pairs(ents) do
+                            ent.amount = ent.amount + math.floor(location.amount/#ents)
+                        end -- endfor ents
                         spawn[v] = nil
-                        --debug("Can't place entity at "..serpent.block(location))
-                    end
-                end
-            else
+                    end -- endfor spawn
+                end -- endif spawn > 0
+            else -- gen_finished = false
                 --debug("Gen not finished, waiting")
                 --self.surface.request_to_generate_chunks(position, 0)
                 local count = 0
@@ -280,7 +286,6 @@ RSO_Surface = {
                     --if game.tick > tick and self.chunks[chunk.str] == GEN_FINISHED then
                     if game.tick > tick then
                         self:populate_chunk(position)
-                        --debug("Repopulated "..chunk.str)
                         global.on_tick[key] = nil
                     end
                 end
@@ -334,9 +339,11 @@ RSO_Surface = {
         local chunk = to_chunk(position)
         if self.settings.remove_resources then
             for _,ent in pairs(self.surface.find_entities_filtered({area=chunk, type='resource'})) do
-                debug("removed "..ent.name.." from position "..tbl2str(ent.position))
-                debug("state of chunk: "..self.chunks[to_chunk(ent.position).str])
-                ent.destroy()
+                --if not self.chunks[to_chunk(ent.position).str] == GEN_FINISHED then
+                    --debug("removed "..ent.name.." from position "..tbl2str(ent.position))
+                    ent.destroy()
+                --end
+                --debug("entity is in already generated chunk")
             end
         end
         if self.settings.remove_enemies then

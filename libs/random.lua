@@ -21,9 +21,12 @@ Random = {
         if #arg == 0 then
             return self:next_int()
         elseif #arg == 1 then
-            l, u = 0, arg[1]
+            l, u = 0, math.floor(arg[1])
         else
-            l, u = arg[1], arg[2]
+            l, u = math.ceil(arg[1]), math.floor(arg[2])
+        end
+        if l>u then
+            error("Random::randint(): 1st argument is greater than 2nd")
         end
         local nbins = u + 1 - l;
         local nrand = 4294967296
