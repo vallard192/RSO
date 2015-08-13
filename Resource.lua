@@ -190,7 +190,8 @@ Resource = {
                     force = game.forces.neutral,
                     amount = math.floor(self.richness_base + amount * self.richness_multiplier ),
                 }
-                if self.surface.can_place_entity(settings) then
+                if true then
+                --if self.s0rface.can_place_entity(settings) then
                     local list = {}
                     for chnk,chnk_data in pairs(spawns) do -- Find spawns in the direct vicinity
                         for k,v in pairs(chnk_data) do
@@ -264,13 +265,21 @@ Resource = {
         local total = 0
         local total_influence = 0
         for location in Metaball.iterate(area, balls) do
+            if location.x == -30 and location.y == -290 then
+                debug('test location')
+                dump(location)
+            end
             settings = {
                 name = self.name,
                 position = { x = location.x, y = location.y},
                 force = game.forces.neutral,
                 amount = math.floor( self.richness_base + location.sum * self.richness_multiplier * dist_mod ),
             }
-            if self.surface.can_place_entity(settings) then
+            if true then
+            --if self.surface.can_place_entity(settings) then
+                if location.x == -30 and location.y == -290 then
+                    debug('can place')
+                end
                 total_influence = total_influence + location.total
                 total = total + settings.amount
                 str = to_chunk(settings.position).str
@@ -278,6 +287,12 @@ Resource = {
                     locations[str] = {}
                 end
                 locations[str][#locations[str]+1] = settings
+            else
+                if location.x == -30 and location.y == -290 then
+                    local ents = self.surface.find_entities({{location.x - 1, location.y -1},{location.x+1, location.y+1}})
+                    debug("can't place")
+                    dump(ents)
+                end
             end
         end
         debug("dist mod:"..dist_mod)
@@ -285,6 +300,7 @@ Resource = {
         -- Spawn ore at locations
         --local mult = math.abs((res-#locations * min_amount)/locations[#locations].total)
         --debug("mult: "..mult)
+        --dump(locations[to_chunk({-30,-290}).str])
         return locations
     end,
 }

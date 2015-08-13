@@ -58,8 +58,7 @@ RSO_Surface = {
         local surface = event.surface
         if event.surface.valid then
             local s = RSO_Surface.get_surface(surface.name)
-            local chunk = event.area
-            s:process_chunk(chunk.left_top)
+            s:process_chunk(event.area.left_top)
         else
             error("surface is not vaild")
         end
@@ -107,42 +106,17 @@ RSO_Surface = {
     get_by_name = function(name)
         debug("use is deprecated, use get_surface instead")
         return RSO_Surface.get_surface(name)
-        --for _, s in pairs(global.surfaces) do
-        --    if s.name == name then
-        --        return s
-        --    end
-        --end
-        --if game.surfaces[name] ~= nil then
-        --    local s = RSO_Surface.new(game.surfaces[name])
-        --    return s
-        --else
-        --    error("Surface not found")
-        --    return nil
-        --end
     end,
 
     get_by_surface = function(surface)
         debug("use is deprecated, use get_surface instead")
         return RSO_Surface.get_surface(surface)
-        --for _, s in pairs(global.surfaces) do
-        --    if s.name == surface.name then
-        --        return s
-        --    end
-        --end
-        --if game.surfaces[surface.name] ~= nil then
-        --    local s = RSO_Surface.new(surface)
-        --    return s
-        --else
-        --    error("Surface not found")
-        --    return nil
-        --end
     end,
 
     get_region = function(self, position)
-        --local size = global.settings.region_size * CHUNK_SIZE
         local size = Settings.REGION_SIZE
-        local rx = math.floor(position.x/size) * size
-        local ry = math.floor(position.y/size) * size
+        local rx = math.floor(position.x/size)
+        local ry = math.floor(position.y/size)
         if self.regions[tbl2str({ x = rx, y = ry })] ~= nil then
             return self.regions[tbl2str({ x = rx, y = ry })]
         else
@@ -151,14 +125,26 @@ RSO_Surface = {
     end,
 
     create_region = function(self, position)
-        local region = {}
-        region.area = {
-            left_top = { x = position.x, y = position.y },
-            right_bottom = { x = position.x + Settings.REGION_SIZE, y = position.y + Settings.REGION_SIZE },
+        local size = Settings.REGION_SIZE
+        local rx = math.floor(position.x/size)
+        local ry = math.floor(position.y/size)
+        local region = {
+            area = {
+                left_top = { x = rx * size, y = ry * size },
+                right_bottom = { x = ( rx + 1 ) * size, y = ( ry + 1 ) * size },
+            },
+            center = { x = rx * size + size/2, y = ry * size + size/2 }, 
         }
+        --self.surface.request_to_generate_chunks(region.center, 1)
         --region.chunks = {}
         --region.spawns = {}
-        self.regions[tbl2str(position)] = region
+        self.regions[tbl2str({x=rx, y=ry})] = region
+        --local chunk = to_chunk(position)
+        --for x=region.area.left_top.x+CHUNK_SIZE,region.area.right_bottom.x-CHUNK_SIZE,CHUNK_SIZE do
+        --    for y=region.area.left_top.y+CHUNK_SIZE,region.area.right_bottom.y-CHUNK_SIZE,CHUNK_SIZE do
+        --         self.surface.create_entity({name='stone', position={x=x,y=y}, amount = 0})
+        --     end
+        -- end
         self:calculate_spawns(region)
         return region
     end,
@@ -270,16 +256,20 @@ RSO_Surface = {
                 for v, location in pairs(spawn) do
                     if self.surface.can_place_entity(location) then
                         ent = self.surface.create_entity(location)
+                        if location.x == -30 and location.y == -290 then
+                            dump(ent)
+                        end
                         if ent ~= nil then
                             spawn[v] = nil
                         end
                     else
+                        spawn[v] = nil
                         --debug("Can't place entity at "..serpent.block(location))
                     end
                 end
             else
                 --debug("Gen not finished, waiting")
-                self.surface.request_to_generate_chunks(position, 1)
+                --self.surface.request_to_generate_chunks(position, 0)
                 --delayed_call(RSO_Surface.populate_chunk, GEN_TICK_WAIT, self, position)
                 local count = 0
                 local tick = game.tick + GEN_TICK_WAIT
